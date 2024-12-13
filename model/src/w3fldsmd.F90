@@ -411,6 +411,8 @@ CONTAINS
           NX     = NXT
           IF (GTYPE.LE.4) GTYPE  = GTYPET
         END IF
+      ELSE
+          NX = NXT
       END IF
     END IF
     !
