@@ -833,5 +833,17 @@
                 "name": "ASCII"
             }
         ]
+    },
+    {
+        "name": "wdas",
+        "num_switches": "upto1",
+        "description": "wave data assimilation module",
+        "valid-options": [
+            {
+                "name": "DA1",
+                "build_files": ["w3wda1md.F90"]
+            }
+        ]
     }
+
 ]

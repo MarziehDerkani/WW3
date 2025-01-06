@@ -40,7 +40,7 @@ check_switches()
               dstress s_ice s_is reflection \
               wind windx wcor rwind curr currx mgwind mgprop mggse \
               subsec tdyn dss0 pdif tide refrx ig rotag nnt mprf \
-              cou oasis agcm ogcm igcm trknc setup pdlib ddlib memck uost rstwind b4b
+              cou oasis agcm ogcm igcm trknc setup pdlib ddlib memck uost rstwind b4b wdas
   do
 
 # 1.a.1 Group switches by category
@@ -317,6 +317,11 @@ check_switches()
                ID='bit-for-bit reproducability'
                TS='B4B'
                OK='B4B' ;;
+#sort:wdas:
+      wdas   ) TY='upto1'
+               ID='wave data assimilation module'
+               TS='DA1'
+               OK='DA0 DA1' ;;
    esac
 
 # 1.a.2 Check to make sure the correct amount of switches identified per category
@@ -439,6 +444,7 @@ check_switches()
       setup  ) setup=$sw ;;
       uost   ) uost=$sw ;;
       b4b    ) b4b=$sw ;;
+      wdas   ) wdas=$sw ;;
               *    ) ;;
     esac
   done
@@ -782,6 +788,12 @@ switch_files()
     MPRF) mprfaux='w3getmem'
   esac
 
+  case $wdas in
+   DA0) wdacode=$NULL ;;
+   DA1) wdacode='w3wda1md' ;;
+  esac
+
+
 } #end of switch_files
 
 
@@ -856,11 +868,11 @@ create_file_list()
                  IO="w3iogrmd $oasismd $agcmmd $ogcmmd $igcmmd"
                 aux="constants w3servmd w3timemd w3arrymd w3dispmd w3gsrumd $tidecode" ;;
       ww3_shel)
-               core='w3fldsmd w3initmd w3wavemd w3wdasmd w3updtmd'
+               core="w3fldsmd w3initmd w3wavemd w3wdasmd $wdacode w3updtmd"
                data="wmmdatmd $memcode w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd"
                prop="$pr $smcm"
             sourcet="$pdlibcode $setupcode w3triamd w3srcemd $dsx $flx $ln $st $nl $bt $ic"
-            sourcet="$sourcet $is $db $tr $bs $refcode $igcode w3parall $uostmd"
+            sourcet="$sourcet $is $db $tr $bs $refcode $igcode w3parall $uostmd $wda"
                  IO="w3iogrmd w3iogomd w3iopomd w3iotrmd w3iorsmd w3iobcmd $oasismd $agcmmd $ogcmmd $igcmmd"
                  IO="$IO w3iosfmd w3partmd"
                 aux="constants w3servmd w3timemd $tidecode w3arrymd w3dispmd w3cspcmd w3gsrumd"
@@ -873,7 +885,7 @@ create_file_list()
                  core='wmesmfmd'
                fi
                core="$core wminitmd wmwavemd wmfinlmd wmgridmd wmupdtmd wminiomd"
-               core="$core w3fldsmd w3initmd w3wavemd w3wdasmd w3updtmd"
+               core="$core w3fldsmd w3initmd w3wavemd w3wdasmd $wdacode w3updtmd"
                data="wmmdatmd $memcode w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd"
                prop="$pr $smcm"
             sourcet="$pdlibcode $pdlibyow $setupcode w3parall w3triamd w3srcemd $dsx $flx $ln $st $nl $bt $ic $is $db $tr $bs $refcode $igcode $uostmd"
@@ -893,7 +905,7 @@ create_file_list()
                 fi ;;
       ww3_sbs1)
                core='wminitmd wmwavemd wmfinlmd wmgridmd wmupdtmd wminiomd'
-               core="$core w3fldsmd w3initmd w3wavemd w3wdasmd w3updtmd"
+               core="$core w3fldsmd w3initmd w3wavemd w3wdasmd $wdacode w3updtmd"
                data="w3parall wmmdatmd $memcode w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd"
                prop="$pr $smcm"
             sourcet="$pdlibcode $pdlibyow w3triamd w3srcemd $dsx $flx $ln $st $nl $bt $db $tr $bs $refcode $igcode $is $ic $uostmd"
@@ -1002,7 +1014,7 @@ create_file_list()
                  IO=
                 aux="constants w3servmd w3timemd w3arrymd w3gsrumd w3parall" ;;
       libww3|libww3.so)
-               core='w3fldsmd w3initmd w3wavemd w3wdasmd w3updtmd'
+               core="w3fldsmd w3initmd w3wavemd w3wdasmd $wdacode w3updtmd"
                data='wmmdatmd w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd'
                prop="$pr $smcm"
             sourcet="w3triamd w3srcemd $dsx $flx $ln $st $nl $bt $ic $is $db $tr $bs $refcode $igcode $uostmd"
@@ -1010,7 +1022,7 @@ create_file_list()
                 aux="constants w3servmd w3timemd $tidecode w3arrymd w3dispmd w3cspcmd w3gsrumd" ;;
       ww3_uprstr)
               core=
-	      data='wmmdatmd w3triamd w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd'
+              data='wmmdatmd w3triamd w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd'
               prop=
            sourcet="$memcode $pdlibcode $pdlibyow $flx $ln $st $nl $bt $ic $is $db $tr $bs $uostmd"
                 IO='w3iogrmd w3iogomd w3iorsmd'

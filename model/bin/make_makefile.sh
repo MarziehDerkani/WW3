@@ -315,6 +315,7 @@
          'W3INITMD'     ) modtest=w3initmd.o ;;
          'W3WAVEMD'     ) modtest=w3wavemd.o ;;
          'W3WDASMD'     ) modtest=w3wdasmd.o ;;
+         'W3WDA1MD'     ) modtest=w3wda1md.o ;;
          'W3UPDTMD'     ) modtest=w3updtmd.o ;;
          'W3FLDSMD'     ) modtest=w3fldsmd.o ;;
          'W3CSPCMD'     ) modtest=w3cspcmd.o ;;

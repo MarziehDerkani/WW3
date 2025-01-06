@@ -431,6 +431,7 @@
        'smcg' ) cd $main_dir/src ; touch w3psmcmd.F90
                                    touch w3smcomd.F90 ;;
        'b4b'  ) cd $main_dir/src ; touch w3psmcmd.F90 ;; 
+       'wdas' ) cd $main_dir/src ; touch w3wda1md.F90 ;; 
        *      ) echo "w3_new: keyword [$key] not recognized" ;;
     esac
   done

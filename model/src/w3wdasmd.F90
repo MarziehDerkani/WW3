@@ -196,6 +196,9 @@ CONTAINS
     USE W3ADATMD
     USE W3ODATMD, ONLY: NDSO, NDSE, NDST, SCREEN, NAPROC, IAPROC,   &
          NAPLOG, NAPOUT, NAPERR
+#ifdef W3_DA1
+    USE W3WDA1MD, ONLY: W3WDA1
+#endif
 #ifdef W3_S
     USE W3SERVMD, ONLY: STRACE
 #endif
@@ -284,7 +287,12 @@ CONTAINS
     !     the WAVEWATCH III run altogether. Check the system documentation
     !     on how to ad your routines to the compile and link system.
     !
-    !     CALL .....
+
+#ifdef W3_DA1
+    IF (DASFLAG(1))  THEN
+      CALL W3WDA1 ( RECL(1), NDAT(1), DATA0 )
+    END IF
+#endif
     !
     !     IF ( ..... ) CALL EXTCDE ( 99 )
     !
