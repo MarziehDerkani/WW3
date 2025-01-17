@@ -204,8 +204,8 @@ CONTAINS
     !
     ! Formats
     !
-1000 FORMAT (/' *** WAVEWATCH III ERROR IN W3WDA1 :'/                &
-              '     DATA RECORD DIMENSION <4 : ',I)
+1000 FORMAT (/' *** WAVEWATCH III ERROR IN W3WDA1 :'/             &
+         '     DATA RECORD DIMENSION <4 : ',I8)
   END SUBROUTINE W3WDA1
   !/ ------------------------------------------------------------------- /
   !>
