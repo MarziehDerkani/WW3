@@ -92,7 +92,8 @@ CONTAINS
 #endif
     USE W3WDATMD, ONLY: VA
     USE W3GDATMD, ONLY: NK, NTH, NSEAL, DDEN, SIG, MAPSF, &
-                        MAPSTA, FLAGLL, XGRD, YGRD, ICLOSE
+                        MAPSTA, FLAGLL, XGRD, YGRD, ICLOSE, &
+                        DA1METHOD
     USE W3PARALL, ONLY: INIT_GET_ISEA, INIT_GET_JSEA_ISPROC
     USE W3GSRUMD, ONLY: W3DIST
     USE W3ODATMD, ONLY: NDSO, NDSE, NDST, SCREEN, NAPROC, IAPROC, &
@@ -187,7 +188,17 @@ CONTAINS
         IF (DKM .LT. 4000.0) THEN
           CALL CALC_WAVE_PARAM(JSEA, ISEA, HS, TM)
          !WRITE(*,'(2X,A8,4I5,2F7.2,F10.2)') "MOD", IAPROC, NAPROC, ISEA, JSEA, HS, TM, DKM
-          CALL CALC_DA_DIANA(DKM, YGRD(IY,IX), YDAT, WS)
+          !
+          SELECT CASE(DA1METHOD)
+            CASE DEFAULT
+              WRITE (NDSE,1010) DA1METHOD
+              CALL EXTCDE(99)
+            CASE(0) ! VOORRIPS ET AL (1997)
+              CALL CALC_DA_VOORRIPS(DKM, WS)
+            CASE(1) ! GREENSLADE & YOUNG (2004)
+              CALL CALC_DA_DIANA(DKM, YGRD(IY,IX), YDAT, WS)
+          END SELECT
+          !
           CALL CALC_WEIGHT(WS, HS, DATA0(3,IDAT), HSDAT, &
                                TM, DATA0(4,IDAT), TMDAT, &
                             W, W2, TMTRU, HSTRU)
@@ -206,6 +217,9 @@ CONTAINS
     !
 1000 FORMAT (/' *** WAVEWATCH III ERROR IN W3WDA1 :'/             &
          '     DATA RECORD DIMENSION <4 : ',I8)
+1010 FORMAT (/' *** WAVEWATCH III ERROR IN W3WDA1 :'/             &
+         '     SCHEME W/ METHOD', I2,' NOT IMPLEMENTED.')
+ 
   END SUBROUTINE W3WDA1
   !/ ------------------------------------------------------------------- /
   !>
@@ -257,7 +271,9 @@ CONTAINS
   !/ ------------------------------------------------------------------- /
   !>
   !> @brief Calculate data assimilation weights based on
-  !> Formula 7.11 in PhD thesis Greenslade (2003).
+  !> Voorrips et al. (1997): "Assimilation of wve spectra
+  !>   from pitch-and-roll buoys in a North Sea wave model",
+  !>   JGR Oceans, 102(C3), 5829-5849.
   !>
   !> @param[in] RASMKM
   !> @param[in] LAT1
@@ -265,8 +281,37 @@ CONTAINS
   !>
   !> @param[out] WS
   !>
-  !> @author  @date 
-  !> 
+  !> @author  @date
+  !>
+  SUBROUTINE CALC_DA_VOORRIPS (RASMKM, WS)
+    !/
+    IMPLICIT NONE
+    REAL(8), INTENT(IN)   :: RASMKM
+    REAL, INTENT(OUT)     :: WS
+    REAL(8)               :: L, W
+    !
+    L = 200.0
+    !
+    W = RASMKM / L
+    WS = REAL(EXP(-W)**(3.0/2.0))
+    !
+  END SUBROUTINE CALC_DA_VOORRIPS
+  !/ ------------------------------------------------------------------- /
+  !>
+  !> @brief Calculate data assimilation weights based on
+  !> Formula 7.11 in PhD thesis Greenslade (2003).
+  !> Greenslade & Young (2004): "Background errors in a global
+  !>   wave model determined from altimeter data", JGR Oceans,
+  !>   109(C9), doi:10.1029/2004JC002324
+  !>
+  !> @param[in] RASMKM
+  !> @param[in] LAT1
+  !> @param[in] LAT2
+  !>
+  !> @param[out] WS
+  !>
+  !> @author  @date
+  !>
   SUBROUTINE CALC_DA_DIANA (RASMKM, LAT1, LAT2, WS)
     !/
     IMPLICIT NONE
@@ -285,7 +330,7 @@ CONTAINS
   !/ ------------------------------------------------------------------- /
   !>
   !> @brief Calculate data assimilation weights based on
-  !> structure no. 11 in Greenlase and Young (2004).
+  !> structure no. 11 in Greenslade and Young (2004).
   !>
   !> @param[in] WS
   !> @param[in] HSWW3

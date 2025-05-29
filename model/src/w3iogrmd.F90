@@ -940,6 +940,13 @@ CONTAINS
 #endif
 
 #endif
+#ifdef W3_DA1
+      !!  DA1 method for wave data assimilation
+      WRITE (NDSM) DA1METHOD
+#ifdef W3_ASCII
+      WRITE (NDSA,*) 'DA1METHOD:', DA1METHOD
+#endif
+#endif
       !!        WRITE(NDSM)                                                 &
       !!             COUG_2D, COUG_RAD3D, COUG_US3D
     ELSE
@@ -1072,6 +1079,9 @@ CONTAINS
       !!  Read rotated Polat/lon and AnglD from mod_def   JGLi12Jun2012
       READ (NDSM,END=801,ERR=802,IOSTAT=IERR) PoLat, PoLon, AnglD, FLAGUNR
 
+#endif
+#ifdef W3_DA1
+      READ (NDSM,END=801,ERR=802,IOSTAT=IERR) DA1METHOD
 #endif
       !
     END IF

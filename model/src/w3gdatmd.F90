@@ -649,6 +649,9 @@ MODULE W3GDATMD
 #ifdef W3_SEC1
     INTEGER          :: NITERSEC1
 #endif
+#ifdef W3_DA1
+    INTEGER          :: DA1METHOD ! Wave data assimilation (mean parameters)
+#endif
     INTEGER, POINTER :: MAPSTA(:,:), MAPST2(:,:),            &
          MAPFS(:,:), MAPSF(:,:)
     !
@@ -1105,6 +1108,9 @@ MODULE W3GDATMD
 #endif
   INTEGER, POINTER        :: NBEDGE
   INTEGER, POINTER        :: EDGES(:,:), NEIGH(:,:)
+#ifdef W3_DA1
+  INTEGER, POINTER        :: DA1METHOD
+#endif
   !
   ! Variables for unstructured grids
   !
@@ -2291,6 +2297,9 @@ CONTAINS
     TRFLAG => GRIDS(IMOD)%TRFLAG
     FLAGLL => GRIDS(IMOD)%FLAGLL
     !
+#ifdef W3_DA1
+    DA1METHOD => GRIDS(IMOD)%DA1METHOD
+#endif
 #ifdef W3_SMC
     NCel   => GRIDS(IMOD)%NCel
     NUFc   => GRIDS(IMOD)%NUFc

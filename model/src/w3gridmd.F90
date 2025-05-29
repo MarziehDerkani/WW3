@@ -945,12 +945,14 @@ MODULE W3GRIDMD
   CHARACTER               :: UGOBCFILE*60
   REAL                    :: UGOBCDEPTH
   LOGICAL                 :: UGOBCOK
-
 #ifdef W3_RTD
   REAL                    :: PLAT, PLON
   LOGICAL                 :: UNROT
   ! Poles of the output nested grids. May be a mix of rotated and standard
   REAL, DIMENSION(9)      :: BPLAT, BPLON
+#endif
+#ifdef W3_DA1
+  INTEGER                 :: METHOD
 #endif
   !
 #ifdef W3_FLD1
@@ -1145,6 +1147,9 @@ MODULE W3GRIDMD
   NAMELIST /ROTD/ PLAT, PLON, UNROT
   ! Poles of destination grids for boundary conditions output
   NAMELIST /ROTB/ BPLAT, BPLON
+#endif
+#ifdef W3_DA1
+  NAMELIST /WDA1/ METHOD
 #endif
   !/
   !/ ------------------------------------------------------------------- /
@@ -3012,6 +3017,22 @@ CONTAINS
       WRITE(NDSO,4975) J,USSP_WN(J)
     ENDDO
     !
+#ifdef W3_DA1
+    METHOD = 0
+    CALL READNL ( NDSS, 'WDA1', STATUS )
+    DA1METHOD = METHOD
+    WRITE (NDSO,9240) STATUS
+    SELECT CASE(DA1METHOD)
+      CASE(0)
+        WRITE (NDSO,9250) "Voorrips et al. (1997)"
+      CASE(1)
+        WRITE (NDSO,9250) "Greenslade and Young (2004)"
+      CASE DEFAULT
+        WRITE (NDSE,1060)
+        CALL EXTCDE ( 31 )
+    END SELECT
+#endif
+    !
     CALL READNL ( NDSS, 'MISC', STATUS )
     WRITE (NDSO,960) STATUS
     !
@@ -3416,7 +3437,9 @@ CONTAINS
       WRITE (NDSO, 4502) ADJUSTL(TRIM(UOSTFILELOCAL)), ADJUSTL(TRIM(UOSTFILESHADOW)), &
            UOSTFACTORLOCAL, UOSTFACTORSHADOW
 #endif
-
+#ifdef W3_DA1
+      WRITE(NDSO,9260) DA1METHOD
+#endif
       !
       IF ( FLCOMB ) THEN
         WRITE (NDSO,2966) CICE0, CICEN, LICE, PMOVE, XSEED, FLAGTR, &
@@ -6768,6 +6791,11 @@ CONTAINS
          '       Excluded Imag. Corridor      : ', F9.4/,  &
          '       Selected ice model           : ', A/)
 #endif
+#ifdef W3_DA1
+9240 FORMAT (/'  Wave data assimilation DA1 ', A/      &
+         ' --------------------------------------------------')
+9250 FORMAT ( '      mean parameter scheme: ', A)
+#endif
     !
 8972 FORMAT ( '       Wind input reduction factor in presence of ', &
          /'         ice :',F6.2, &
@@ -6859,6 +6887,9 @@ CONTAINS
 4991 FORMAT ( '  &ROTD PLAT =', F6.2,', PLON =', F7.2,', UNROT =',L3,' /')
 4992 FORMAT ( '  &ROTB BPLAT =',9(F6.1,",")/                        &
          '        BPLON =',9(F6.1,","),' /')
+#endif
+#ifdef W3_DA1
+9260 FORMAT ( '  &WDA1 METHOD = ',I1 ,' /')
 #endif
 
 3000 FORMAT (/'  The spatial grid: '/                                &
@@ -7126,6 +7157,10 @@ CONTAINS
          '     AND UNROT MUST BE .FALSE.' )
 1053 FORMAT (/' *** WAVEWATCH III ERROR IN W3GRID :'/                &
          '     WITH NAMELIST VALUE BPLAT == 90, BPLON MUST BE -180')
+#endif
+#ifdef W3_DA1
+1060 FORMAT (/' *** WAVEWATCH III ERROR IN W3GRID :'/                &
+         '     WITH NAMELIST VALUE &WDA1 METHOD MUST BE [0,1]' )
 #endif
     !
 1040 FORMAT ( '       Space-time extremes DX      :',F10.2)
@@ -7440,6 +7475,10 @@ CONTAINS
 #ifdef W3_IC5
               CASE('SIC5 ')
                 READ (NDS,NML=SIC5,END=801,ERR=802,IOSTAT=J)
+#endif
+#ifdef W3_DA1
+              CASE('WDA1')
+                READ (NDS,NML=WDA1,END=801,ERR=802,IOSTAT=J)
 #endif
               CASE('UNST')
                 READ (NDS,NML=UNST,END=801,ERR=802,IOSTAT=J)
