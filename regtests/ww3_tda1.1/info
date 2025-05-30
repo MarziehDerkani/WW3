@@ -1,0 +1,32 @@
+#############################################################################
+#                                                                           #
+# ww3_tp1.1 Test script for WW-III, data assimilation (mean parameters)     #
+#                                                                           #
+# Model should be compiled with the switches :                              #
+#                                                                           #
+# Remarks :                                                                 #
+#                                                                           #
+# - Test case input (default):                                              #
+#   * ww3_grid.inp : (default)                                              #
+#     + Spatial grid: 51 x 51 rectilinear lat/lon grid (global)             #
+#       - dx = 0.2 deg, dy= 0.2 deg                                         #
+#       - Xrange = 0:10 deg, Yrange = 0:10 deg                              #
+#     + Spectral grid: ntheta = 36, nf = 30, f1 = 0.04123, fgamma = 1.1     #
+#   * switch options :                                                      #
+#     + switch_DA1     : data assimilation                                  #
+#     + switch_MPI_DA1 : MPI with data assimilation                         #
+#                                                                           #
+#  Example run_test commands:                                               #
+#  (some details will vary by local system and configuration)               #
+#  ./bin/run_cmake_test -s DA1 -o both -w work_DA1 ../model ww3_tda1.1      #
+#  ./bin/run_cmake_test -s MPI_DA1  -p mpirun -n 4 -o both   \              #
+#      -w work_MPI_DA1 ../model ww3_tda1.1                                  #
+#                                                                           #
+#                                             Marzieh Derkani, Jun 2025     #
+#                                                                           #
+#    Copyright 2009-2013 National Weather Service (NWS),                    #
+#       National Oceanic and Atmospheric Administration.  All rights        #
+#       reserved.  WAVEWATCH III is a trademark of the NWS.                 #
+#       No unauthorized use without permission.                             #
+#                                                                           #
+#############################################################################
