@@ -1,5 +1,6 @@
 name: regtest_gnu
-on: [push, pull_request, workflow_dispatch]
+#on: [push, pull_request, workflow_dispatch]
+on: [workflow_dispatch]
 
 # Cancel in-progress workflows when pushing to a branch
 concurrency:
