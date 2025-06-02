@@ -1,4 +1,4 @@
-name: regtest_gnu
+name: regtest_gnu_UWA
 #on: [push, pull_request, workflow_dispatch]
 on: [workflow_dispatch]
 
