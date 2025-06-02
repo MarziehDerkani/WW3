@@ -12,7 +12,7 @@ spack:
   - jasper@2.0.32
   - g2@3.4.5
   - bacio@2.4.1
-  - w3emc@2.9.2
+  - w3emc@2.12.0
   - parallelio@2.5.9+fortran~pnetcdf
   - esmf@8.4.2~debug~xerces+external-parallelio
   view: true
