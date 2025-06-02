@@ -66,7 +66,7 @@ jobs:
           export OASIS_WORK_PATH=${GITHUB_WORKSPACE}/ww3/regtests/ww3_tp2.14/input/work_oasis3-mct
           cd ww3/regtests/ww3_tp2.14/input/oasis3-mct/util/make_dir
           cmake .
-          make VERBOSE=1
+          make VERBOSE=0
           cp -r ${GITHUB_WORKSPACE}/ww3/regtests/ww3_tp2.14/input/work_oasis3-mct ${GITHUB_WORKSPACE}
 
   regtest_gnu_UWA:
@@ -109,7 +109,7 @@ jobs:
           # make -j2 VERBOSE=1
           cd ${GITHUB_WORKSPACE}/ww3/regtests
           bash ./bin/run_cmake_test -f -s DA1 -o both -w work_DA1 ../model ww3_tda1.1
-          bash ./bin/run_cmake_test -f -p mpirun -n $PBS_NCPUS -s MPI_DA1 -o both -w work_MPI_DA1 ../model ww3_tda1.1
+          bash ./bin/run_cmake_test -f -p mpirun -n 2 -s MPI_DA1 -o both -w work_MPI_DA1 ../model ww3_tda1.1
           bash ./bin/cleanup
 
       - name: cache-data
