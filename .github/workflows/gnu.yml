@@ -7,10 +7,10 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  cache_key: gnu11
-  CC: gcc-10
-  FC: gfortran-10
-  CXX: g++-10
+  cache_key: gnu14
+  CC: gcc
+  FC: gfortran
+  CXX: g++
 
 
 # Split into a steup step, and a WW3 build step which
@@ -53,7 +53,7 @@ jobs:
           spack external find cmake
           spack add mpich@3.4.2
           spack concretize
-          spack install --dirty -v
+          spack install --dirty
 
       - name: build-oasis
         if: steps.cache-env.outputs.cache-hit != 'true'

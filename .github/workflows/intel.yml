@@ -4,7 +4,8 @@
 #
 # Matt Masarik, Alex Richert, Ed Hartnett
 name: Intel Linux Build
-on: [push, pull_request, workflow_dispatch]
+#on: [push, pull_request, workflow_dispatch]
+on: [workflow_dispatch]
 
 # Cancel in-progress workflows when pushing to a branch
 concurrency:
