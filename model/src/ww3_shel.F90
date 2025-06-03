@@ -2814,7 +2814,7 @@ PROGRAM W3SHEL
 954 FORMAT ( '            ',A,': file not needed')
 955 FORMAT ( '            ',A,': file OK')
 956 FORMAT ( '            ',A,': file OK, recl =',I3,               &
-       '  undef = ',E10.3)
+       '  undef = ',I6 )
   !
 960 FORMAT (/'  Running model without input fields'/                &
        ' --------------------------------------------------'/)
