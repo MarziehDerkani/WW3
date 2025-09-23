@@ -948,6 +948,7 @@ MODULE W3GRIDMD
   CHARACTER               :: UGOBCFILE*60
   REAL                    :: UGOBCDEPTH
   LOGICAL                 :: UGOBCOK
+
 #ifdef W3_RTD
   REAL                    :: PLAT, PLON
   LOGICAL                 :: UNROT
@@ -7499,7 +7500,7 @@ CONTAINS
 #endif
 #ifdef W3_DA1
               CASE('WDA1')
-                READ (NDS,NML=WDA1,END=801,ERR=802,IOSTAT=J)
+                READ (NDS,NML=WDA1,IOSTAT=J)
 #endif
               CASE('UNST')
                 READ (NDS,NML=UNST,IOSTAT=J)
