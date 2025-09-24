@@ -402,10 +402,10 @@ CONTAINS
   !>
   !> @brief Get ISEA for DA.
   !>
-  !> @param[in] XBOUY Longitude of observation point.
-  !> @param[in] YBOUY Latitude of observation point.
+  !> @param[in] X longitude of observation point.
+  !> @param[in] Y latitude of observation point.
   !>
-  !> @param[out] DASISEA ISEA for DA location.
+  !> @param[out] ISEA index for DA location.
   !>
   !> @author  @date 
   !>
