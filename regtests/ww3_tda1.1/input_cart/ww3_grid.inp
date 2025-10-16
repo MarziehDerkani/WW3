@@ -1,0 +1,29 @@
+$ WAVEWATCH III Grid preprocessor input file
+$ ------------------------------------------
+  'WAVE DATA ASSIMILATION TEST   '
+$
+   1.1 0.04123  30 36  0.5
+$
+   F T T F F F
+  600.  600.  600.  600.
+$
+  &PRO2 DTIME=20000.0 /
+  &WDA1 METHOD = 0 /
+END OF NAMELISTS
+$
+  'RECT' F 'NONE'
+  51  51
+   20.E3  20.E3  1.
+    0.0    0.0   1.
+$
+  -1. 1. 10  -1000. 2 1 '(....)' 'UNIT' 'input'
+$
+  2601*1.
+$
+  10  2 1 '(....)' 'PART' 'input'
+$
+   0  0  F
+   0  0  F
+   0  0
+$
+   0. 0. 0. 0.  0

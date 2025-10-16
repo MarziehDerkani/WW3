@@ -6065,7 +6065,7 @@ CONTAINS
         WRITE(740+IAPROC,*) 'solver', nbiter, is_converged, prop_conv, B_JGS_PMIN
         FLUSH(740+IAPROC)
 #endif
-        IF (myrank == 0) WRITE(*,*) 'No. of solver iterations', nbiter, is_converged, prop_conv, B_JGS_PMIN
+!       IF (myrank == 0) WRITE(*,*) 'No. of solver iterations', nbiter, is_converged, prop_conv, B_JGS_PMIN
         IF (prop_conv .le. B_JGS_PMIN + TINY(1.)) THEN
 #ifdef W3_DEBUGFREQSHIFT
           WRITE(740+IAPROC,*) 'prop_conv=', prop_conv

@@ -1,0 +1,47 @@
+$ WAVEWATCH III Grid preprocessor input file
+$ ------------------------------------------
+  'WAVE DATA ASSIMILATION TEST   '
+$
+   1.1 0.04123  30 36  0.5
+$
+   F T T F F F
+ 1800. 1800. 1800. 1800.
+$
+&UNST
+  UGOBCAUTO = F,
+  UGOBCDEPTH= -1.,
+  EXPFSN    = F,
+  EXPFSPSI  = F,
+  EXPFSFCT  = F,
+  IMPFSN    = F,
+  EXPTOTAL  = F,
+  IMPTOTAL  = T,
+  IMPREFRACTION = T,
+  IMPFREQSHIFT = T,
+  IMPSOURCE = T,
+  SETUP_APPLY_WLV = F,
+  SOLVERTHR_SETUP=1E-14,
+  CRIT_DEP_SETUP=0.1,
+  JGS_USE_JACOBI = T,
+  JGS_BLOCK_GAUSS_SEIDEL = T,
+  JGS_TERMINATE_MAXITER = T,
+  JGS_MAXITER = 1000,
+  JGS_TERMINATE_NORM = F,
+  JGS_TERMINATE_DIFFERENCE = T,
+  JGS_DIFF_THR = 1.E-8,
+  JGS_PMIN = 3.0,
+  JGS_LIMITER = F,
+  JGS_NORM_THR = 1.E-20 /
+END OF NAMELISTS
+$
+  'UNST' T 'NONE'
+$
+   1.0 0.10 20  1. 4 1 '...)'  'NAME' './../input/da1.msh'
+$
+  10  2 1 '(....)' 'PART' 'input'
+$
+   0  0  F
+   0  0  F
+   0  0
+$
+   0. 0. 0. 0.  0

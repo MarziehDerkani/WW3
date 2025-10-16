@@ -6,23 +6,41 @@
 #                                                                           #
 # Remarks :                                                                 #
 #                                                                           #
-# - Test case input (default):                                              #
+#  Test case input (default):                                               #
 #   * ww3_grid.inp : (default)                                              #
+#     + Spectral grid: ntheta = 36, nf = 30, f1 = 0.04123, fgamma = 1.1     #
 #     + Spatial grid: 51 x 51 rectilinear lat/lon grid (global)             #
 #       - dx = 0.2 deg, dy= 0.2 deg                                         #
 #       - Xrange = 0:10 deg, Yrange = 0:10 deg                              #
-#     + Spectral grid: ntheta = 36, nf = 30, f1 = 0.04123, fgamma = 1.1     #
+#   * ww3_grid_cart.inp : (-i input_cart)                                   #
+#     + Spatial grid: 51 x 51 cartesian grid                                #
+#       - dx = 20 km, dy= 20 km                                             #
+#       - Xrange = 0:1000 km, Yrange = 0:1000 km                            #
+#   * ww3_grid_msh.inp : (-g msh)                                           #
+#     + Spatial grid: 51 x 51 unstructured lat/lon grid                     #
+#       - Xrange = 0:10 deg, Yrange = 0:10 deg                              #
+#   * ww3_grid_smc.inp : (-i input_smc)                                     #
+#     + Spatial grid: unstructured lat/lon grid                             #
+#       - Xrange = 0:10 deg, Yrange = 0:10 deg                              #
+#                                                                           #
 #   * switch options :                                                      #
 #     + switch_DA1     : data assimilation                                  #
-#     + switch_MPI_DA1 : MPI with data assimilation                         #
+#     + switch_MPI_DA1 : MPI w/ data assimilation (regular/cartesian grid)  #
+#     + switch_MPI_SCOTCH_DA1 : MPI w/ data assim. (unstructured grid)      #
+#     + switch_MPI_METIS_DA1 : MPI w/ data assimilation (unstructured grid) #
+#     + switch_MPI_SMC_DA1 : MPI w/ data assimilation (SMC lat/lon grid)    #
+#                                                                           #
+#  Visualisation:                                                           #
+#    python input/plot_ounf.py work_MPI_DA1/ww3.196806.nc                   #
 #                                                                           #
 #  Example run_test commands:                                               #
 #  (some details will vary by local system and configuration)               #
-#  ./bin/run_cmake_test -s DA1 -o both -w work_DA1 ../model ww3_tda1.1      #
-#  ./bin/run_cmake_test -s MPI_DA1  -p mpirun -n 4 -o both   \              #
+#  ./bin/run_cmake_test -g rect -s DA1 -o both -w work_DA1 \                #
+#      ../model ww3_tda1.1                                                  #
+#  ./bin/run_cmake_test -g rect -s MPI_DA1 -p mpirun -n 4 -o both   \       #
 #      -w work_MPI_DA1 ../model ww3_tda1.1                                  #
 #                                                                           #
-#                                             Marzieh Derkani, Jun 2025     #
+#                                             Marzieh Derkani, Oct 2025     #
 #                                                                           #
 #    Copyright 2009-2013 National Weather Service (NWS),                    #
 #       National Oceanic and Atmospheric Administration.  All rights        #
