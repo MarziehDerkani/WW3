@@ -201,7 +201,6 @@ CONTAINS
     USE W3SERVMD, ONLY: STRACE
 #endif
     !
-    USE W3ODATMD, only : IAPROC
     USE CONSTANTS, ONLY: file_endian
 
     IMPLICIT NONE
@@ -624,7 +623,6 @@ CONTAINS
     INTEGER, SAVE           :: IENT = 0
 #endif
     LOGICAL                 :: WRITE
-    INTEGER                 :: I, IX
     !
     !/
     !/ ------------------------------------------------------------------- /
@@ -1062,6 +1060,7 @@ CONTAINS
 #endif
 #ifdef W3_OASIS
     USE W3ODATMD, ONLY: DTOUT
+    use mpi_f08,  ONLY: MPI_COMM
 #endif
     IMPLICIT NONE
     !/
@@ -1079,7 +1078,7 @@ CONTAINS
     CHARACTER(LEN=3), INTENT(IN) :: IDFLD
     LOGICAL, INTENT(INOUT), OPTIONAL        :: FLAGSC
 #ifdef W3_OASIS
-    INTEGER, INTENT(IN), OPTIONAL :: COUPL_COMM
+    type(MPI_COMM), INTENT(IN), OPTIONAL :: COUPL_COMM
 #endif
 
     !/
@@ -1582,7 +1581,7 @@ CONTAINS
     !/ ------------------------------------------------------------------- /
     !/ Local parameters
     !/
-    INTEGER                 :: ISTAT, NRT
+    INTEGER                 :: ISTAT
 #ifdef W3_S
     INTEGER, SAVE           :: IENT = 0
 #endif
@@ -1919,7 +1918,7 @@ CONTAINS
     INTEGER, SAVE           :: IENT = 0
 #endif
     TYPE(T_GSU)             :: GSU
-    INTEGER                 :: IX, IY, I, J, NNBR, II(4), JJ(4),    &
+    INTEGER                 :: IX, IY, NNBR, II(4), JJ(4),    &
          MSKC, IFOUND, IMASK, ICOR1
     REAL                    :: RR(4), X, Y
     REAL, POINTER           :: PLAT(:,:), PLON(:,:)
