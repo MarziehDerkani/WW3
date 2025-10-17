@@ -9,7 +9,7 @@ set_target_properties(METIS::METIS PROPERTIES
 
 find_package(GKLIB)
 if(NOT GKLIB_FOUND)
-  message(STATUS "GKLIB not found")
+  message(STATUS "Warning: GKLIB not found (not linking -lGKlib")
   target_link_libraries(METIS::METIS)
 else()
   target_link_libraries(METIS::METIS INTERFACE GKLIB::GKLIB)

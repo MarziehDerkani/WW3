@@ -103,11 +103,12 @@ CONTAINS
     USE W3SERVMD, ONLY: STRACE
 #endif
     !
+#ifdef W3_MPI
+    USE MPI_F08
+#endif
+    !
     IMPLICIT NONE
     !
-#ifdef W3_MPI
-    INCLUDE "mpif.h"
-#endif
     !/
     !/ ------------------------------------------------------------------- /
     !/ Parameter list

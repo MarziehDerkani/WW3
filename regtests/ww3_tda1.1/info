@@ -24,7 +24,7 @@
 #       - Xrange = 0:10 deg, Yrange = 0:10 deg                              #
 #                                                                           #
 #   * switch options :                                                      #
-#     + switch_DA1     : data assimilation (serial)                         #
+#     + switch_DA1     : data assimilation (serial/regular grid)            #
 #     + switch_MPI_DA1 : MPI w/ data assimilation (regular/cartesian grid)  #
 #     + switch_MPI_SCOTCH_DA1 : MPI w/ data assim. (unstructured grid)      #
 #     + switch_MPI_METIS_DA1 : MPI w/ data assimilation (unstructured grid) #
@@ -38,12 +38,20 @@
 #                                                                           #
 #  Example run_test commands:                                               #
 #  (some details will vary by local system and configuration)               #
-#  ./bin/run_cmake_test -g rect -s DA1 -o both -w work_DA1 \                #
-#      ../model ww3_tda1.1                                                  #
-#  ./bin/run_cmake_test -g rect -s MPI_DA1 -p mpirun -n 4 -o both   \       #
-#      -w work_MPI_DA1 ../model ww3_tda1.1                                  #
-#                                                                           #
-#                                             Marzieh Derkani, Oct 2025     #
+#    ./bin/run_cmake_test -s DA1 -o both -w work_DA1 ../model ww3_tda1.1    #
+#    ./bin/run_cmake_test -p mpirun -n 16 -s MPI_DA1 -o both \              #
+#         -w work_MPI_DA1 ../model ww3_tda1.1                               #
+#    ./bin/run_cmake_test -i input_cart -s DA1 -o both \                    #
+#         -w work_CART_DA1 ../model ww3_tda1.1                              #
+#    ./bin/run_cmake_test -i input_cart -p mpirun -n 16 -s MPI_DA1 -o both\ #
+#         -w work_CART_MPI_DA1 ../model ww3_tda1.1                          #
+#    ./bin/run_cmake_test -g msh -p mpirun -n 16 -s MPI_METIS_DA1 -o both \ #
+#         -w work_METIS_DA1 ../model ww3_tda1.1                             #
+#    ./bin/run_cmake_test -g msh -p mpirun -n 16 -s MPI_SCOTCH_DA1 -o both\ #
+#         -w work_SCOTCH_DA1 ../model ww3_tda1.1                            #
+#    ./bin/run_cmake_test -i input_smc -p mpirun -n 16 -o both \            #
+#         -w work_SMC_DA1 ../model ww3_tda1.1                               #
+#                                               Marzieh Derkani, Oct 2025   #
 #                                                                           #
 #    Copyright 2009-2013 National Weather Service (NWS),                    #
 #       National Oceanic and Atmospheric Administration.  All rights        #
