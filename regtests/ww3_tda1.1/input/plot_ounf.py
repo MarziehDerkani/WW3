@@ -9,7 +9,7 @@ rcParams['font.size'] = 8
 field = 'hs'
 cLevels = np.arange(0.5, 3.601, 0.5)
 ncFile = sys.argv[1]
-
+figFile = ncFile.replace(".nc",".svg")
 
 if not os.access(ncFile,(os.F_OK and os.R_OK)):
      raise IOError('Unable to access file \'%s\'.'%ncFile)
@@ -80,4 +80,5 @@ for i, ax in enumerate(axs.flatten()):
       backgroundcolor="w",
 )
 
-pyplot.show()
+pyplot.savefig(figFile)
+print(f"'{figFile}' written.")

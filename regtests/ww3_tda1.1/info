@@ -24,14 +24,17 @@
 #       - Xrange = 0:10 deg, Yrange = 0:10 deg                              #
 #                                                                           #
 #   * switch options :                                                      #
-#     + switch_DA1     : data assimilation                                  #
+#     + switch_DA1     : data assimilation (serial)                         #
 #     + switch_MPI_DA1 : MPI w/ data assimilation (regular/cartesian grid)  #
 #     + switch_MPI_SCOTCH_DA1 : MPI w/ data assim. (unstructured grid)      #
 #     + switch_MPI_METIS_DA1 : MPI w/ data assimilation (unstructured grid) #
 #     + switch_MPI_SMC_DA1 : MPI w/ data assimilation (SMC lat/lon grid)    #
 #                                                                           #
-#  Visualisation:                                                           #
+#  Plot:                                                                    #
 #    python input/plot_ounf.py work_MPI_DA1/ww3.196806.nc                   #
+#    python input/plot_ounf.py work_SCOTCH_DA1/ww3.196806.nc                #
+#    python input/plot_ounf.py work_CART_DA1/ww3.196806.nc                  #
+#    python input/plot_ounf.py work_SMC_DA1/ww3.196806.nc                   #
 #                                                                           #
 #  Example run_test commands:                                               #
 #  (some details will vary by local system and configuration)               #
