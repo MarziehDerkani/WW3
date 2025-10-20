@@ -45,10 +45,11 @@ CONTAINS
   !*                                                                    *
   !**********************************************************************
   SUBROUTINE PDLIB_ABORT(istat)
+    use yowerr, only: abort
     IMPLICIT NONE
     integer, intent(in) :: istat
     Print *, 'Error with istat=', istat
-    CALL ABORT
+    call abort()
   END SUBROUTINE PDLIB_ABORT
   !**********************************************************************
   !*                                                                    *

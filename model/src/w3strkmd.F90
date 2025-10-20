@@ -5733,6 +5733,8 @@ CONTAINS
     !     LO      INTEGER      input    First element
     !     HI      INTEGER      input    Last element
     !
+    USE W3SERVMD, ONLY: EXTCDE
+    !/
     IMPLICIT NONE
     !/
     INTEGER, INTENT(IN) :: LO,HI
@@ -5766,16 +5768,16 @@ CONTAINS
     !/    --- Check array size and bounds. ---
     IF ( SIZE(ARRAY).EQ. 0 ) THEN
       WRITE(6,199)
-      CALL ABORT
+      CALL EXTCDE(1)
     ELSE IF ( SIZE(ARRAY).NE.SIZE(IDX) ) THEN
       WRITE(6,201)
-      CALL ABORT
+      CALL EXTCDE(2)
     ELSE IF ( LBOUND(ARRAY,1).GT.LO ) THEN
       WRITE(6,203)
-      CALL ABORT
+      CALL EXTCDE(3)
     ELSE IF ( UBOUND(ARRAY,1).LT.HI ) THEN
       WRITE(6,205)
-      CALL ABORT
+      CALL EXTCDE(4)
     END IF
     !
     TOP = LO
@@ -5858,6 +5860,8 @@ CONTAINS
     !     LO      INTEGER      input    First element
     !     HI      INTEGER      input    Last element
     !
+    USE W3SERVMD, ONLY: EXTCDE
+    !/
     IMPLICIT NONE
     !/
     INTEGER, INTENT(IN) :: LO,HI
@@ -5891,16 +5895,16 @@ CONTAINS
     !/    --- Check array size and bounds. ---
     IF ( SIZE(ARRAY).EQ. 0 ) THEN
       WRITE(6,199)
-      CALL ABORT
+      CALL EXTCDE(5)
     ELSE IF ( SIZE(ARRAY).NE.SIZE(IDX) ) THEN
       WRITE(6,201)
-      CALL ABORT
+      CALL EXTCDE(6)
     ELSE IF ( LBOUND(ARRAY,1).GT.LO ) THEN
       WRITE(6,203)
-      CALL ABORT
+      CALL EXTCDE(7)
     ELSE IF ( UBOUND(ARRAY,1).LT.HI ) THEN
       WRITE(6,205)
-      CALL ABORT
+      CALL EXTCDE(8)
     END IF
     !
     TOP = LO
