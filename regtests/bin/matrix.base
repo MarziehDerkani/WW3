@@ -2097,6 +2097,14 @@
    echo "$rtst -s ST4 -w work_UPD6_O     -i input_UPD6_O     $ww3 ww3_ta1" >> matrix.body
    echo "$rtst -s ST4 -w work_UPD6_U     -i input_UPD6_U     $ww3 ww3_ta1" >> matrix.body
    echo "$rtst -s ST4 -w work_UPD6_U_cap -i input_UPD6_U_cap $ww3 ww3_ta1" >> matrix.body
+   echo ' ' >> matrix.body
+   echo "$rtst -s DA1                   -w work_DA1            -o both                $ww3 ww3_tda1.1" >> matrix.body
+   echo "$rtst -s DA1 -i input_cart     -w work_cart_DA1       -o both                $ww3 ww3_tda1.1" >> matrix.body
+   echo "$rtst -s MPI_DA1               -w work_MPI_DA1        -o both -p $mpi -n $np $ww3 ww3_tda1.1" >> matrix.body
+   echo "$rtst -s MPI_DA1 -i input_cart -w work_cart_MPI_DA1   -o both -p $mpi -n $np $ww3 ww3_tda1.1" >> matrix.body
+   echo "$rtst -s MPI_METIS_DA1  -g msh -w work_msh_METIS_DA1  -o both -p $mpi -n $np $ww3 ww3_tda1.1" >> matrix.body
+   echo "$rtst -s MPI_SCOTCH_DA1 -g msh -w work_msh_SCOTCH_DA1 -o both -p $mpi -n $np $ww3 ww3_tda1.1" >> matrix.body
+   echo "$rtst -i input_smc             -w work_smc_MPI_DA1    -o both -p $mpi -n $np $ww3 ww3_tda1.1" >> matrix.body
   fi
 
  #Test of atmosphere, ocean, and ice coupling using OASIS
