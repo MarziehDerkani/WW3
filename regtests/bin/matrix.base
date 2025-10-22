@@ -88,7 +88,7 @@
   echo "  echo '      Multi 07 (unstr. + reg. grds)      : $multi07'"          >> matrix.head
   echo "  echo '      Multi 08 (with ice)                : $multi08'"          >> matrix.head
   echo "  echo '      Multi 09 (SMC multi grid)          : $multi09'"          >> matrix.head
-  echo "  echo '      Assim Update of the restart file   : $assim'"            >> matrix.head
+  echo "  echo '      Assim (upd. restart + cont. d.a.)  : $assim'"            >> matrix.head
   echo "  echo '      OASIS coupling                     : $oasis'"            >> matrix.head
   echo "  echo '      Calendar type                      : $calendar'"         >> matrix.head
   echo "  echo '      ESMF Coupling                      : $esmf'"             >> matrix.head
@@ -2079,9 +2079,10 @@
    fi
  fi
 
- #Test of updating the restart spectra
+ #Test of data assimilation
  if [ "$assim" = 'y' ]
  then
+   #Test of updating the restart spectra
    echo ' ' >> matrix.body
    echo "$rtst -s ST4 -w work_UPD0F_O    -i input_UPD0F_O    $ww3 ww3_ta1" >> matrix.body
    echo "$rtst -s ST4 -w work_UPD0F_U    -i input_UPD0F_U    $ww3 ww3_ta1" >> matrix.body
@@ -2097,6 +2098,7 @@
    echo "$rtst -s ST4 -w work_UPD6_O     -i input_UPD6_O     $ww3 ww3_ta1" >> matrix.body
    echo "$rtst -s ST4 -w work_UPD6_U     -i input_UPD6_U     $ww3 ww3_ta1" >> matrix.body
    echo "$rtst -s ST4 -w work_UPD6_U_cap -i input_UPD6_U_cap $ww3 ww3_ta1" >> matrix.body
+   #Continues assimilation of mean parameters
    echo ' ' >> matrix.body
    echo "$rtst -s DA1                   -w work_DA1            -o both                $ww3 ww3_tda1.1" >> matrix.body
    echo "$rtst -s DA1 -i input_cart     -w work_cart_DA1       -o both                $ww3 ww3_tda1.1" >> matrix.body
