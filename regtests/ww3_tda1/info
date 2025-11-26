@@ -1,0 +1,32 @@
+#############################################################################
+#                                                                           #
+# ww3_tp1 Test script for WW-III, data assimilation (mean parameters)       #
+#                                                                           #
+# Model should be compiled with the switches :                              #
+#                                                                           #
+# Remarks :                                                                 #
+#                                                                           #
+#  Test case input:                                                         #
+#   * wind sea assimilation     (default)                                   #
+#   * swell assimilation        (input_swl)                                 #
+#   * sea + swell assimilation  (input_sea_swl)                             #
+#                                                                           #
+#   * switch options :                                                      #
+#     + switch_DA1     : data assimilation (serial/regular grid)            #
+#                                                                           #
+#  Example run_test commands:                                               #
+#  (some details will vary by local system and configuration)               #
+#    ./bin/run_cmake_test -o both -w work_gnu_sea ../model ww3_tda1         #
+#    ./bin/run_cmake_test -i input_swl -o both -w work_gnu_swl   \          #
+#                   ../model ww3_tda1                                       #
+#    ./bin/run_cmake_test -i input_sea_swl -o both -w work_gnu_sea_swl  \  #
+#                   ../model ww3_tda1                                       #
+#                                                                           #
+#                                               Marzieh Derkani, Oct 2025   #
+#                                                                           #
+#    Copyright 2009-2013 National Weather Service (NWS),                    #
+#       National Oceanic and Atmospheric Administration.  All rights        #
+#       reserved.  WAVEWATCH III is a trademark of the NWS.                 #
+#       No unauthorized use without permission.                             #
+#                                                                           #
+#############################################################################
