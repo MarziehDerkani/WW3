@@ -122,8 +122,8 @@ CONTAINS
     INTEGER                 :: IDAT, IX, IY, ISEA, JSEA, &
                                MREC, IK, ITH, DATPROC
     REAL, PARAMETER         :: HSMIN = 0.01
-    REAL                    :: HSDAT, TMDAT
-    REAL                    :: HS, TM
+    REAL                    :: HSDAT, TMDAT, S1DAT, S2DAT
+    REAL                    :: HS, TM, S1, S2
     REAL                    :: TMTRU, HSTRU, W, W2, WS
     REAL(KIND=8)            :: XDAT, YDAT, DKM, DIST2KM
 #ifdef W3_MPI
@@ -168,8 +168,8 @@ CONTAINS
      !WRITE(*,'(2X,A8,3I6)') "MPI",IAPROC, NAPROC, DATPROC
 
       IF (IAPROC .EQ. DATPROC) THEN
-        CALL CALC_WAVE_PARAM(JSEA, ISEA, HSDAT, TMDAT)
-      ! WRITE(*,'(2X,A8,4I6,2F7.2)') "DA-PROC", IAPROC, DATPROC, ISEA, JSEA, HSDAT, TMDAT
+        CALL CALC_WAVE_PARAM(JSEA, ISEA, HSDAT, TMDAT, S1DAT, S2DAT)
+      ! WRITE(*,'(2X,A8,4I6,3F7.2)') "DA-PROC", IAPROC, DATPROC, ISEA, JSEA, HSDAT, TMDAT, WSTPDAT
       ENDIF
 #ifdef W3_MPI
       CALL MPI_BARRIER(MPI_COMM_WAVE, IERR_MPI)
@@ -186,9 +186,10 @@ CONTAINS
         IF (MAPSTA(IY,IX) .LT. 0) CYCLE
 
         DKM = W3DIST(FLAGLL,XDAT,YDAT,XGRD(IY,IX),YGRD(IY,IX))*DIST2KM
-        IF (DKM .LT. 4000.0) THEN
-          CALL CALC_WAVE_PARAM(JSEA, ISEA, HS, TM)
-         !WRITE(*,'(2X,A8,4I5,2F7.2,F10.2)') "MOD", IAPROC, NAPROC, ISEA, JSEA, HS, TM, DKM
+        IF (DKM .LT. 1000.0) THEN
+          CALL CALC_WAVE_PARAM(JSEA, ISEA, HS, TM, S1, S2)
+         !WRITE(*,'(2X,A8,4I5,2F7.2,E10.3,F10.1)') "    MOD", IAPROC, NAPROC, ISEA, JSEA, HS, TM, WSTP, DKM
+          WRITE(*,'(2X,A,2F6.2,2F9.6)') "TEST [FC:HS,T01,S,SM]",HS, TM, S1, S2
           !
           SELECT CASE(DA1METHOD)
             CASE DEFAULT
@@ -204,9 +205,11 @@ CONTAINS
                                TM, DATA0(4,IDAT), TMDAT, &
                             W, W2, TMTRU, HSTRU)
           CALL DA_HS_UPD2(JSEA, W2)
+          CALL CALC_WAVE_PARAM(JSEA, ISEA, HS, TM, S1, S2)
+          WRITE(*,'(2X,A,2F6.2,2F9.6)') "TEST [AN:HS,T01,S,SM]",HS, TM, S1, S2
          !IF (IAPROC .EQ. DATPROC) THEN
-         !  CALL CALC_WAVE_PARAM(JSEA, ISEA, HS, TM)
-         !  WRITE(*,'(2X,A8,4I6,2F7.2)') "DATPROC", IAPROC, DATPROC, ISEA, JSEA, HS, TM
+         !  CALL CALC_WAVE_PARAM(JSEA, ISEA, HS, TM, S1, S2)
+         !  WRITE(*,'(2X,A8,4I6,2F7.2,E10.3)') "DATPROC", IAPROC, DATPROC, ISEA, JSEA, HS, TM, WSTP
          !END IF !/ IAPROC == DATPROC
         END IF !/ (DKM .LT. 4000.0)
       END DO !/ JSEA..NSEAL
@@ -220,33 +223,56 @@ CONTAINS
          '     DATA RECORD DIMENSION <4 : ',I8)
 1010 FORMAT (/' *** WAVEWATCH III ERROR IN W3WDA1 :'/             &
          '     SCHEME W/ METHOD', I2,' NOT IMPLEMENTED.')
- 
+
   END SUBROUTINE W3WDA1
   !/ ------------------------------------------------------------------- /
   !>
-  !> @brief Get model parameters at observation point.
+  !> @brief Integrate mean paramters from wave spectra.
+  !>
+  !> This subroutine computes the wave steepness
+  !> (deep water approximation)
+  !>   S = Hs/L = Hs * 2pi/(g*T02**2)
+  !> Mendes and Oliveira (2021): Deep-water spectral
+  !>     wave steepness offshore mainland Portugal
+  !>     https://doi.org/10.1016/j.oceaneng.2021.109548
+  !> amd spectral steepness SM
+  !>   SM = M0 * OMEGA**4 / GRAV**2 Eq (4.69) in Young (1999)
+  !> or expressed with wave number M0 * WNMEAN**2 / (4pi**2)
+  !> Lionello et al. (1992): Assimilation of altimeter data
+  !>     in a global third-generation wave model, JGR Ocean
+  !> Young (1999): Wind generated ocean waves, Cambridge Press
   !>
   !> @param[in] JSEA
   !> @param[in] ISEA
   !>
   !> @param[out] HSIG
-  !> @param[out] TMEAN
+  !> @param[out] T01
+  !> @param[out] S
+  !> @param[out] SM
   !>
   !> @author  @date
   !>
-  SUBROUTINE CALC_WAVE_PARAM ( JSEA, ISEA, HSIG, TMEAN)
+  SUBROUTINE CALC_WAVE_PARAM ( JSEA, ISEA, HSIG, T01, S, SM)
     !/
-    USE CONSTANTS, ONLY: TPI
+    USE CONSTANTS, ONLY: TPI, TPIINV, GRAV
     USE W3ADATMD, ONLY: CG
     USE W3WDATMD, ONLY: VA
     USE W3GDATMD, ONLY: NK, NTH, DDEN, SIG
     !
     IMPLICIT NONE
     INTEGER, INTENT(IN) :: JSEA, ISEA
-    REAL, INTENT(OUT)   :: HSIG, TMEAN
-    REAL                :: EMEAN
+    REAL, INTENT(OUT)   :: HSIG, T01, S, SM
+    REAL                :: M0, M1, M2
     REAL, ALLOCATABLE   :: EB(:)
     INTEGER             :: IK, ITH
+    !
+    M0 = 0.0
+    M1 = 0.0
+    M2 = 0.0
+    T01 = 0.0
+    HSIG = 0.0
+    S = 0.0
+    SM = 0.0
     !
     ALLOCATE(EB(NK))
     DO IK=1, NK
@@ -255,18 +281,24 @@ CONTAINS
         EB(IK) = EB(IK) + VA(ITH+(IK-1)*NTH,JSEA)
       END DO
       EB(IK) = EB(IK) * DDEN(IK) / CG(IK,ISEA)
-    END DO
+      M0 = M0 + EB(IK)
+      M1 = M1 + EB(IK) * SIG(IK)
+      M2 = M2 + EB(IK) * SIG(IK)**2
 
-    EMEAN = 0.0
-    TMEAN = 0.0
-    DO IK = 1, NK
-        EMEAN = EMEAN + EB(IK)
-        TMEAN = TMEAN + EB(IK) * SIG(IK)
     END DO
     DEALLOCATE(EB)
 
-    TMEAN = TPI * EMEAN / MAX(TMEAN, 1.E-7)
-    HSIG = 4.0 * SQRT( EMEAN )
+    M1 = M1 * TPIINV
+    M2 = M2 * TPIINV**2
+
+    T01 = M0 / MAX(M1, 1.E-7)
+    HSIG = 4.0 * SQRT( M0 )
+    ! Wave steepness (Mendes and Oliveira 2021)
+    ! S = Hs/L = Hs * 2pi/(g*T02**2)
+    S = TPI * HSIG * M2 / (M0 * GRAV)
+    ! Spectral steepness (Young 1999)
+    ! SM = m0 * (2pi*FMEAN)**4 / g**2
+    SM = (TPI*M1)**4 * (M0**-3) / (GRAV**2)
     !
   END SUBROUTINE CALC_WAVE_PARAM
   !/ ------------------------------------------------------------------- /
