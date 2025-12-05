@@ -98,7 +98,7 @@ CONTAINS
     !  9. Source code :
     !
     !/ ------------------------------------------------------------------- /
-    USE CONSTANTS, ONLY: RADIUS, TPI, TPIINV, DERA, RADE, UNDEF
+    USE CONSTANTS, ONLY: RADIUS, TPI, DERA, RADE, UNDEF
     USE W3ADATMD, ONLY: CG, WN, U10, U10D, DW
 #ifdef W3_MPI
     USE W3ADATMD, ONLY: MPI_COMM_WAVE
@@ -279,22 +279,16 @@ CONTAINS
           IF (SEAFR.GT.SFCUT .AND. HSSEA.GT.HSMIN) THEN
             ! Wind sea analysis based on wind sea fraction (from b)
             SEAAN = 4.0 * SQRT(SEAFR*(HSAN/4)*(HSAN/4))
-         !  WRITE(*,"(A,F7.4,F5.2,A)") "CALL WSDUR(",    &
-         !      UST(ISEA), HSSEA, " TSEA)"
             CALL WSDUR(UST(ISEA), HSSEA, TSEA)
     !
     !     d) Estimate analysis friction velocity and
     !        analysis mean frequency of wind sea
-         !  WRITE(*,"(A,F7.4,2F10.2,A)") "CALL WSANA(",  &
-         !      UST(ISEA), TSEA, SEAAN," USTAN FMSEAA)"
             CALL WSANA(UST(ISEA), TSEA, SEAAN, USTAN, FMSEAAN)
           END IF
     !
     !     e) Update spectrum by stretching and scaling
-         !WRITE(*,"(A,2F5.2,2F8.2,A)") "CALL UPSPEC(A CG", &
-         !    HS, HSAN, FMSEA, FMSEAAN, ")"
           CALL UPSPEC(A, CG1, HS, HSAN, FMSEA, FMSEAAN)
-          CALL SPCPAR(A, CG1, HS, TM, S1, S2)
+         !CALL SPCPAR(A, CG1, HS, TM, S1, S2)
          !WRITE(*,'(2X,A,2F6.2,2F9.6)') "TEST [AN:HS,T01,S,SM]", &
          !    HS, TM, S1, S2
     !
@@ -305,7 +299,7 @@ CONTAINS
          !  CALL SPCPAR(VA(1:NSPEC, JSEA), CG1, HS, TM, S1, S2)
          !  WRITE(*,'(2X,A8,4I6,2F7.2,E10.3)') "DATPROC", IAPROC, DATPROC, ISEA, JSEA, HS, TM, WSTP
          !END IF !/ IAPROC == DATPROC
-        END IF !/ (DKM .LT. 4000.0)
+        END IF !/ (DKM .LT. 1000.0)
       END DO !/ JSEA..NSEAL
     END DO  !/ IDAT, NDAT
     !
