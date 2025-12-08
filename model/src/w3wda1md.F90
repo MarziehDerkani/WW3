@@ -248,11 +248,11 @@ CONTAINS
             END DO
           END DO
     !
-          FMSEA = UNDEF
-          FMSEAAN = UNDEF
-          SEAFR = UNDEF
-          USTAN = UNDEF
-          TSEA = UNDEF
+          FMSEA = UNDEF   ! Mean frequency of wind sea (model guess)
+          FMSEAAN = UNDEF ! Mean frequency of wind sea (analysis)
+          SEAFR = UNDEF   ! Fraction of wind sea to total sig. wave height
+          USTAN = UNDEF   ! Friction velocity (analysis)
+          TSEA = UNDEF    ! Duration of wind sea (from growth curve)
     !
     !     b) Partition wave spectra and find wind sea partition
           UABS = U10(ISEA)*ASF(ISEA)
@@ -264,11 +264,14 @@ CONTAINS
           END IF
     !
           CALL W3PART(E, UABS, UDIR, DEPTH, WN(1:NK,ISEA), NP, WP, DIMXP)
+          ! Array WP contains integral parameters describing partitions,
+          ! where index IP=0 contains parameters for entire spectrum.
           DO IP=1, NP
+            ! Scan for wind sea part (wind sea fraction >= threshold).
             IF (WP(6,IP).GE.WSCUT ) THEN
               HSSEA = WP(1, IP)
               FMSEA = 1.0/WP(13, IP) ! mean frequency
-              SEAFR = MIN((WP(1,IP)*WP(1,IP))/(WP(1,0)*WP(1,0)), 1.0)
+              SEAFR = MIN((HSSEA*HSSEA)/(WP(1,0)*WP(1,0)), 1.0)
             ! WRITE(*,"(A,1X,2I2,2F6.2,2F7.4)") "W3PART", PTMETH, IP,   &
             !      HSSEA, FMSEA, WP(6,IP), SEAFR
             END IF
@@ -392,7 +395,7 @@ CONTAINS
     T01 = M0 / MAX(M1, 1.0E-7)
     HSIG = 4.0 * SQRT( M0 )
     S = TPI * HSIG * M2 / (M0 * GRAV)
-    SM = (TPI*M1)**4 * (M0**-3) / (GRAV*GRAV)
+    SM = (TPI*M1)**4 * (M0**(-3)) / (GRAV*GRAV)
     !
     RETURN
     !
@@ -575,9 +578,9 @@ CONTAINS
   !/ ------------------------------------------------------------------- /
   !>
   !> @brief Modify spectrum by stretching and scaling following
-  !>        method by Lionello et al. (1992). A new spectrum F is
-  !>        build from spectrum V in the form of
-  !>             F(sigma,theta) = A E(B*sigma,theta)
+  !>        method by Lionello et al. (1992). A new spectrum FN is
+  !>        build from spectrum F in the form of
+  !>             FN(sigma,theta) = A F(B*sigma,theta)
   !>
   !>        A swell dominant spectrum is updated using the
   !>        steepness criteria with a small correction applied:
@@ -587,24 +590,25 @@ CONTAINS
   !>        A wind sea dominant spectrum is computed with
   !>             B = FMSEA/FMSEAAN
   !>             A = (ETAN/ETOT)*B
+  !>
   !> Lionello et al. (1992): "Assimilation of altimeter data in a global
   !>     third-generation wave model", JGR, 97(9), 14,453-14,474
   !>
-  !> @param[inout] SPEC    Action density spectrum A(k,theta)
-  !> @param[in] CG         Group velocities
-  !> @param[in] HS         Significant wave height (model guess)
-  !> @param[in] HSAN       Analysis significant wave height
-  !> @param[in] FM         Wind sea mean frequency (model guess)
-  !> @param[in] FMAN       Analysis of wind sea mean frequency
+  !> @param[inout] A    Action density spectrum A(k,theta)
+  !> @param[in] CG      Group velocities
+  !> @param[in] HS      Significant wave height (model guess)
+  !> @param[in] HSAN    Analysis significant wave height
+  !> @param[in] FM      Wind sea mean frequency (model guess)
+  !> @param[in] FMAN    Analysis of wind sea mean frequency
   !>
   !> @author  @date
   !>
-  SUBROUTINE UPSPEC ( SPEC, CG, HS, HSAN, FM, FMAN )
+  SUBROUTINE UPSPEC ( A, CG, HS, HSAN, FM, FMAN )
   !/
     USE W3GDATMD, ONLY: NSPEC, NK, NTH, SIG, XFR
   !/
     IMPLICIT NONE
-    REAL, INTENT(INOUT) :: SPEC(NSPEC)
+    REAL, INTENT(INOUT) :: A(NSPEC)
     REAL, INTENT(IN)    :: HS, HSAN, FM, FMAN, CG(NK)
     INTEGER             :: IK, ITH, I1, I2, IKTH
     REAL                :: XHS, XR, XB, XL
@@ -617,7 +621,7 @@ CONTAINS
       ! The spectrum is mainly swell (wind sea mean
       ! frequency of the spectrum is negative)
       DELTA = 1.0 - 6.0E-3 * (HSAN-HS)
-      XR = DELTA * (XHS**2.5)
+      XR = DELTA * (XHS**(2.5))
       XB = DELTA * SQRT(XHS)
     ELSE
       ! The spectrum is mainly wind sea
@@ -639,8 +643,8 @@ CONTAINS
         FAC2 = SIG(I2)/CG(I2)
         XFAC = XR * CG(IK)/SIG(IK) ! scale and transform back
         DO ITH=1, NTH
-          SPC1 = SPEC(ITH + (I1-1)*NTH) * FAC1
-          SPC2 = SPEC(ITH + (I2-1)*NTH) * FAC2
+          SPC1 = A(ITH + (I1-1)*NTH) * FAC1
+          SPC2 = A(ITH + (I2-1)*NTH) * FAC2
           DELTA = DSU * (SPC2-SPC1)
           IKTH = ITH + (IK-1)*NTH
           SPCUP(IKTH) = MAX(0.0, SPC1 + DELTA) * XFAC
@@ -648,7 +652,7 @@ CONTAINS
       END IF
     END DO
   !/
-    SPEC(1:NSPEC) = SPCUP(1:NSPEC)
+    A(1:NSPEC) = SPCUP(1:NSPEC)
   !/
   END SUBROUTINE UPSPEC
   !/ ------------------------------------------------------------------- /
@@ -753,13 +757,13 @@ CONTAINS
   !> @param[in]  B       floating point value 2
   !> @param[in]  REL_TOL relative tolerance
   !> @param[in]  ABS_TOL absolute tolerance
-  !> @param[out] CLOSE   LOGICAL
-  FUNCTION ISCLOSE(A, B, REL_TOL, ABS_TOL) RESULT(CLOSE)
+  !> @param[out] C       LOGICAL
+  FUNCTION ISCLOSE(A, B, REL_TOL, ABS_TOL) RESULT(C)
     IMPLICIT NONE
     REAL, INTENT(IN) :: A, B
     REAL, INTENT(IN) :: REL_TOL, ABS_TOL
-    LOGICAL :: CLOSE
-    CLOSE = ABS(A - B) < MAX(ABS_TOL, REL_TOL * MAX(ABS(A), ABS(B)))
+    LOGICAL :: C
+    C = ABS(A - B) < MAX(ABS_TOL, REL_TOL * MAX(ABS(A), ABS(B)))
   END FUNCTION ISCLOSE
   !/ ------------------------------------------------------------------- /
   !/
