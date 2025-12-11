@@ -956,10 +956,10 @@ CONTAINS
 
 #endif
 #ifdef W3_DA1
-      !!  DA1 method for wave data assimilation
-      WRITE (NDSM) DA1METHOD
+      !!  DA1 parameters for wave data assimilation
+      WRITE (NDSM) DA1METHOD, DA1MAXDKM, DA1SFCUT
 #ifdef W3_ASCII
-      WRITE (NDSA,*) 'DA1METHOD:', DA1METHOD
+      WRITE (NDSA,*) 'DA1METHOD, DA1MAXDKM, DA1SFCUT:', DA1METHOD, DA1MAXDKM, DA1SFCUT
 #endif
 #endif
       !!        WRITE(NDSM)                                                 &
@@ -1107,7 +1107,7 @@ CONTAINS
 
 #endif
 #ifdef W3_DA1
-      READ (NDSM,IOSTAT=IERR) DA1METHOD
+      READ (NDSM,IOSTAT=IERR) DA1METHOD, DA1MAXDKM, DA1SFCUT
       IF (IERR.NE.0) CALL EXTIOF(NDSE,IERR,'W3IOGR','mod_def.'//FILEXT(:IEXT),51)
 #endif
       !

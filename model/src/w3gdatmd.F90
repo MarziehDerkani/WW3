@@ -650,7 +650,8 @@ MODULE W3GDATMD
     INTEGER          :: NITERSEC1
 #endif
 #ifdef W3_DA1
-    INTEGER          :: DA1METHOD ! Wave data assimilation (mean parameters)
+    INTEGER          :: DA1METHOD
+    REAL             :: DA1MAXDKM, DA1SFCUT
 #endif
     INTEGER, POINTER :: MAPSTA(:,:), MAPST2(:,:),            &
          MAPFS(:,:), MAPSF(:,:)
@@ -1111,6 +1112,7 @@ MODULE W3GDATMD
   INTEGER, POINTER        :: EDGES(:,:), NEIGH(:,:)
 #ifdef W3_DA1
   INTEGER, POINTER        :: DA1METHOD
+  REAL, POINTER           :: DA1MAXDKM, DA1SFCUT
 #endif
   !
   ! Variables for unstructured grids
@@ -2301,6 +2303,8 @@ CONTAINS
     !
 #ifdef W3_DA1
     DA1METHOD => GRIDS(IMOD)%DA1METHOD
+    DA1MAXDKM => GRIDS(IMOD)%DA1MAXDKM
+    DA1SFCUT => GRIDS(IMOD)%DA1SFCUT
 #endif
 #ifdef W3_SMC
     NCel   => GRIDS(IMOD)%NCel

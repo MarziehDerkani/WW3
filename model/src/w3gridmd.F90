@@ -958,6 +958,7 @@ MODULE W3GRIDMD
 #endif
 #ifdef W3_DA1
   INTEGER                 :: METHOD
+  REAL                    :: MAXDKM, SEAFCUT
 #endif
   !
 #ifdef W3_FLD1
@@ -1155,7 +1156,7 @@ MODULE W3GRIDMD
   NAMELIST /ROTB/ BPLAT, BPLON
 #endif
 #ifdef W3_DA1
-  NAMELIST /WDA1/ METHOD
+  NAMELIST /WDA1/ METHOD, MAXDKM, SEAFCUT
 #endif
   !/
   !/ ------------------------------------------------------------------- /
@@ -3032,14 +3033,20 @@ CONTAINS
     !
 #ifdef W3_DA1
     METHOD = 0
+    MAXDKM = 4000.0
+    SEAFCUT = 0.50
     CALL READNL ( NDSS, 'WDA1', STATUS )
     DA1METHOD = METHOD
+    DA1MAXDKM = MAXDKM
+    DA1SFCUT = SEAFCUT
     WRITE (NDSO,9240) STATUS
     SELECT CASE(DA1METHOD)
       CASE(0)
-        WRITE (NDSO,9250) "Voorrips et al. (1997)"
+        WRITE (NDSO,9250) DA1MAXDKM,              &
+            "Voorrips et al. (1997)", DA1SFCUT
       CASE(1)
-        WRITE (NDSO,9250) "Greenslade and Young (2004)"
+        WRITE (NDSO,9250) DA1MAXDKM,              &
+            "Greenslade and Young (2004)", DA1SFCUT
       CASE DEFAULT
         WRITE (NDSE,1060)
         CALL EXTCDE ( 31 )
@@ -3457,7 +3464,7 @@ CONTAINS
            UOSTFACTORLOCAL, UOSTFACTORSHADOW
 #endif
 #ifdef W3_DA1
-      WRITE(NDSO,9260) DA1METHOD
+      WRITE(NDSO,9260) DA1METHOD, DA1MAXDKM, DA1SFCUT
 #endif
       !
       IF ( FLCOMB ) THEN
@@ -6833,7 +6840,9 @@ CONTAINS
 #ifdef W3_DA1
 9240 FORMAT (/'  Wave data assimilation DA1 ', A/      &
          ' --------------------------------------------------')
-9250 FORMAT ( '      mean parameter scheme: ', A)
+9250 FORMAT ( '        maximum distance (km): ', F7.1/,  &
+              '   spatial correlation scheme: ', A/,     &
+              '    wind sea fraction cut-off: ', F7.3 )
 #endif
     !
 8972 FORMAT ( '       Wind input reduction factor in presence of ', &
@@ -6928,7 +6937,8 @@ CONTAINS
          '        BPLON =',9(F6.1,","),' /')
 #endif
 #ifdef W3_DA1
-9260 FORMAT ( '  &WDA1 METHOD = ',I1 ,' /')
+9260 FORMAT ( '  &WDA1 METHOD=' ,I1, ', MAXDKM=', F6.1, &
+                  ', SEAFCUT=',F5.3, ' /')
 #endif
 
 3000 FORMAT (/'  The spatial grid: '/                                &
