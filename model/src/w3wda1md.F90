@@ -593,7 +593,7 @@ CONTAINS
     REAL, INTENT(INOUT) :: A(NSPEC)
     REAL, INTENT(IN)    :: HS, HSAN, FM, FMAN, CG(NK)
     INTEGER             :: IK, ITH, I1, I2, IKTH
-    REAL, PARAMETER     :: FMCUT = 1.0E-4
+    REAL, PARAMETER     :: FMCUT = 2.0E-2
     REAL                :: XHS, XR, XB, XL
     REAL                :: AUP(NSPEC), A1, A2
     REAL                :: SU, DSU, DELTA, FACT(NK)
