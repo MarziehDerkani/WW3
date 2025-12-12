@@ -3051,6 +3051,14 @@ CONTAINS
         WRITE (NDSE,1060)
         CALL EXTCDE ( 31 )
     END SELECT
+    IF (DA1MAXDKM.LE.0.0 .OR. DA1MAXDKM.GT.10.E3) THEN
+      WRITE (NDSE,1065)
+      CALL EXTCDE ( 31 )
+    END IF
+    IF (DA1SFCUT.LT.0.0 .OR. DA1SFCUT.GT.1.0) THEN
+      WRITE (NDSE,1070)
+      CALL EXTCDE ( 31 )
+    END IF
 #endif
     !
     CALL READNL ( NDSS, 'MISC', STATUS )
@@ -7198,7 +7206,13 @@ CONTAINS
 #endif
 #ifdef W3_DA1
 1060 FORMAT (/' *** WAVEWATCH III ERROR IN W3GRID :'/                &
-         '     WITH NAMELIST VALUE &WDA1 METHOD MUST BE [0,1]' )
+         '     WITH NAMELIST VALUE &WDA1 METHOD, MUST BE [0,1]' )
+1065 FORMAT (/' *** WAVEWATCH III ERROR IN W3GRID :'/                &
+         '     WITH NAMELIST VALUE &WDA1 MAXDKM;'/                   &
+         '     VALID RANGE: [0,10E3]')
+1070 FORMAT (/' *** WAVEWATCH III ERROR IN W3GRID :'/                &
+         '     WITH NAMELIST VALUE &WDA1 SEAFCUT;'/                  &
+         '     VALID RANGE: [0.0,1.0]')
 #endif
     !
 1040 FORMAT ( '       Space-time extremes DX      :',F10.2)

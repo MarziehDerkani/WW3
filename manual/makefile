@@ -165,6 +165,7 @@ run/core.tex \
 run/fig_log.tex \
 run/fig_gspl.tex \
 run/das.tex \
+run/DA1.tex \
 run/sup.tex \
 run/ww3_grid.tex \
 run/ww3_strt.tex \
