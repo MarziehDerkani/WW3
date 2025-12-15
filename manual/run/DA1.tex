@@ -1,0 +1,73 @@
+\vssub
+\subsubsection{~Wave height assimilation with optimal interpolation ({\code DA1})} \label{sub:da1}
+\opthead{DA1}{WAM model, UWA\footnotemark[12], BOM\footnotemark[13]}{M. Derkani, S. Zieger}
+
+\footnotetext[12]{University of Western Australia}
+\footnotetext[13]{Australian Bureau of Meteorology}
+\noindent
+Data assimilation package ({\F w3wda1} in {\file w3wda1md.ftn}) features
+an optimal interpolation scheme for assimilating wave height data
+into {\ws}. The scheme is based on optimal interpolation for
+assimilating altimeter data from \citet{art:LGJ92},
+originally implemented in WAM \citep{bk:WAM94}.
+
+The analysis wave height field is estimated by optimim interpolation using
+the correlation lengh scale calculation of either \citet{art:VMH97}, or
+\citet{GY2004}. {\ws}'s full two-dimensional wave spectrum is utilised as
+first-guess spectrum and classified into primarily wind sea (or swell)
+using the models internal partitioning algorithm (see topographic partitioning
+in section \ref{sub:num_part}) to determine transformation parameters $A$ and $B$.
+Knowing the first-guess spectrum $F_1(f,\theta)$, the analysis spectrum
+$F_\mathrm{a}(f,\theta)$ is constructed with Eq.~(\ref{eq:DA101}).:
+\begin{equation}\label{eq:DA101}
+F_\mathrm{a}(f,\theta) = A\cdot F_1(B\cdot f,\theta)
+\end{equation}
+Depending on wind sea or swell spectrum, different techniques are applied
+to estimate tranformation parameters from analysis (subscript `a`) and
+first-guess spectrum (subscript `1`). 
+
+If the first-guess spectrum contains primarily wind sea, parameters $A$ and $B$ 
+can be determined in accordance with nondimensional growth laws, specifically
+the nondimensional energy $E\star=E\,g^2/u_\star^4$, the nondimensional
+mean frequency $\overline{f}\star = u_\star\,\overline{f}/g$ and the nondimensional
+duration $t\star=g\,t/u_\star$ relation. Knowing parameters (i.e., $H_s$, $u_\star$, and $\overline(f)$)
+of the wind sea partition from the first-guess spectrum, an analysis friction
+velocity and analysis mean frequency are determined from duration limited
+growth relation \citep{art:LGJ92} (Eq.~(\ref{eq:DA104})) and 
+frequency-energy growth \citep{art:TGLDAS22} curve (Eq.~(\ref{eq:DA105})).
+\begin{eqnarray}
+E\star = 955 \tanh {\bigl ( 6.02\cdot 10^{-5}\,t\star^{0.695}\bigr )}\label{eq:DA104}\\
+f\star = 5.054\cdot 10^{-4}\,\overline{f}\star^{-2.959}\label{eq:DA105}
+\end{eqnarray}
+
+Parameters $A$ and $B$ are then calculated from significant wave height $H_s$ 
+and mean frequency $\overline{f}$ as given in Eq.~(\ref{eq:DA102}).
+\begin{equation}\label{eq:DA102}
+A = \left ( \frac{H_{s\,\mathrm{a}}}{H_{s\,1}} \right )^2\text{,}\ 
+B = \frac{\overline{f}_\mathrm{a}}{\overline{f}_1}
+\end{equation}
+
+In case the spectrum contains primarily swell, parameters
+$A$ and $B$ are calculated from Eq.~(\ref{eq:DA103}) with a small correction $C$ applied.
+\begin{equation}\label{eq:DA103}
+C = 1.0 - 6\cdot 10^{-3} \bigl ( H_{s\,\mathrm{a}} - H_{s\,1} \bigr )\text{,}\ 
+B = C \left (  \frac{H_{s\,\mathrm{a}}}{H_{s\,1}} \right )^{1/2}\text{,}\ 
+A = B \left ( \frac{H_{s\,\mathrm{a}}}{H_{s\,1}} \right )^{2}
+\end{equation}
+
+% tab:DA1_par
+
+\begin{table} \begin{center}
+\begin{tabular}{|l|c|l|} \hline \hline
+  Namelist  &  value   & description \\
+\hline
+   METHOD   &  0    &  \citet{art:VMH97} (default) \\
+            &  1    &  \citet{GY2004} \\
+   MAXDKM   & 4000  &  distance (in km) around observation to activate routine \\
+   SEAFCUT  &  0.5  &  wind sea dominance threshold \\
+  \hline \hline
+\end{tabular} \end{center}
+\caption{Namelist parameters for data assimilation package {\code \&WDA1}.}
+\label{tab:DA1_par} \botline \end{table}
+
+
