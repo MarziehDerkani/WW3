@@ -18,42 +18,55 @@ first-guess spectrum and classified into primarily wind sea (or swell)
 using the models internal partitioning algorithm (see topographic partitioning
 in section \ref{sub:num_part}) to determine transformation parameters $A$ and $B$.
 Knowing the first-guess spectrum $F_1(f,\theta)$, the analysis spectrum
-$F_\mathrm{a}(f,\theta)$ is constructed with Eq.~(\ref{eq:DA101}).:
+$F_\mathrm{a}(f,\theta)$ is constructed with Eq.~(\ref{eq:DA101}).
 \begin{equation}\label{eq:DA101}
 F_\mathrm{a}(f,\theta) = A\cdot F_1(B\cdot f,\theta)
 \end{equation}
 Depending on wind sea or swell spectrum, different techniques are applied
-to estimate tranformation parameters from analysis (subscript `a`) and
-first-guess spectrum (subscript `1`). 
-
-If the first-guess spectrum contains primarily wind sea, parameters $A$ and $B$ 
-can be determined in accordance with nondimensional growth laws, specifically
-the nondimensional energy $E\star=E\,g^2/u_\star^4$, the nondimensional
-mean frequency $\overline{f}\star = u_\star\,\overline{f}/g$ and the nondimensional
-duration $t\star=g\,t/u_\star$ relation. Knowing parameters (i.e., $H_s$, $u_\star$, and $\overline(f)$)
-of the wind sea partition from the first-guess spectrum, an analysis friction
-velocity and analysis mean frequency are determined from duration limited
-growth relation \citep{art:LGJ92} (Eq.~(\ref{eq:DA104})) and 
-frequency-energy growth \citep{art:TGLDAS22} curve (Eq.~(\ref{eq:DA105})).
+to estimate tranformation parameters. If the first-guess spectrum contains
+primarily wind sea, parameters $A$ and $B$ can be determined in accordance
+with nondimensional growth laws, namely the nondimensional energy
+ $E\star=E\,g^2/u_\star^4$, the nondimensional mean frequency
+ $\overline{f}\star = u_\star\,\overline{f}/g$ and the nondimensional duration
+ $t\star=g\,t/u_\star$ relation. Knowing parameters of the wind sea partition
+from the first-guess spectrum (i.e., $H_s$, $u_\star$, and $\overline(f)$),
+an analysis friction velocity $u_{\star\,\mathrm{a}}$
+and analysis mean frequency $\overline{f}_\mathrm{a}$ are determined from
+duration limited growth relation given in Eq.~(\ref{eq:DA102}) \citep{art:LGJ92}
+and frequency-energy growth relation given in Eq.~(\ref{eq:DA103}) \citep{art:TGLDAS22}.
 \begin{eqnarray}
-E\star = 955 \tanh {\bigl ( 6.02\cdot 10^{-5}\,t\star^{0.695}\bigr )}\label{eq:DA104}\\
-f\star = 5.054\cdot 10^{-4}\,\overline{f}\star^{-2.959}\label{eq:DA105}
+E\star = 955 \tanh {\bigl ( 6.02\cdot 10^{-5}\,t\star^{0.695}\bigr )}\label{eq:DA102}\\
+E\star = 5.054\cdot 10^{-4}\,\overline{f}\star^{-2.959}\label{eq:DA103}
 \end{eqnarray}
 
-Parameters $A$ and $B$ are then calculated from significant wave height $H_s$ 
-and mean frequency $\overline{f}$ as given in Eq.~(\ref{eq:DA102}).
-\begin{equation}\label{eq:DA102}
+Parameters $A$ and $B$ are then calculated from significant wave height $H_s$
+of the total sea and the mean frequency $\overline{f}$ of wind sea from
+analysis (subscript `a`) and first-gruess (subscript `1`) estimates as given in Eq.~(\ref{eq:DA104}).
+\begin{equation}\label{eq:DA104}
 A = \left ( \frac{H_{s\,\mathrm{a}}}{H_{s\,1}} \right )^2\text{,}\ 
 B = \frac{\overline{f}_\mathrm{a}}{\overline{f}_1}
 \end{equation}
 
 In case the spectrum contains primarily swell, parameters
-$A$ and $B$ are calculated from Eq.~(\ref{eq:DA103}) with a small correction $C$ applied.
-\begin{equation}\label{eq:DA103}
+$A$ and $B$ are calculated from Eq.~(\ref{eq:DA105}) with a small correction $C$ applied.
+\begin{equation}\label{eq:DA105}
 C = 1.0 - 6\cdot 10^{-3} \bigl ( H_{s\,\mathrm{a}} - H_{s\,1} \bigr )\text{,}\ 
 B = C \left (  \frac{H_{s\,\mathrm{a}}}{H_{s\,1}} \right )^{1/2}\text{,}\ 
 A = B \left ( \frac{H_{s\,\mathrm{a}}}{H_{s\,1}} \right )^{2}
 \end{equation}
+
+In case of mixed wind sea and swell, the topographic partitioning alogrithm
+can determine the wind sea part of the spectrum accurately. If the wind sea
+fraction of the surface variance exceeds the threshold,
+then the spectrum is considered primarily wind sea and
+equations~(\ref{eq:DA102})--(\ref{eq:DA104}) apply.
+The threshold value can be adjusted through namelist parameter {\code SEAFCUT},
+\citeauthor{art:LGJ92} uses a threshold value of {\code 0.5} (default), while
+\citeauthor{art:TGLDAS22} cited a value of {\code 0.75}. To avoid uneccessary
+overheads of the data assimilation routine, a namelist parameter {\code MAXDKM} for
+maximum distance between model grid point and references assimilation point was
+added to activate data assimilation subroutines (see Table~\ref{tab:DA1_par}).
+
 
 % tab:DA1_par
 
