@@ -19,8 +19,9 @@
 MODULE W3WDA1MD
   PUBLIC :: W3WDA1
   PRIVATE :: DA1SPA, DA1BGC1, DA1BGC2, DA1AN, ISCLOSE,    &
-             INIT_GET_DATISEA, UPSPEC, WSDUR, WSANA
+             INIT_GET_DATISEA, UPSPEC, UPSPART, WSDUR, WSANA
   PRIVATE
+    REAL, PARAMETER :: HSMIN = 0.01
   !/ Constants for duration limited energy growth (nondimensional)
   !/      E* = ET tanh( AT (t*)**BT )
     REAL, PARAMETER :: ET = 955.0
@@ -28,7 +29,7 @@ MODULE W3WDA1MD
     REAL, PARAMETER :: BT = 0.695
   !/ Constants for frequency energy growth (nondimensional)
   !/      E* = AF (f*)**BF
-  !/REAL, PARAMETER :: AF = 1.68E-4  ! Linello et al. (1992)
+  !/REAL, PARAMETER :: AF = 1.68E-4  ! Lionello et al. (1992)
   !/REAL, PARAMETER :: BF = -3.27
     REAL, PARAMETER :: AF = 5.054E-4 ! Toledano et al. (2022)
     REAL, PARAMETER :: BF = -2.959
@@ -133,18 +134,21 @@ CONTAINS
     !/ ------------------------------------------------------------------- /
     !/ Local parameters :
     !/
-    INTEGER                 :: IDAT, IX, IY, ISEA, JSEA, IK, ITH, &
+    INTEGER                 :: IDAT, IX, IY, ISEA, JSEA, IK, ITH, ISP, &
                                MREC, DATPROC, DIMXP, NP, IP, W3PTMETH
     LOGICAL                 :: W3FLCOMB
-    REAL, PARAMETER         :: HSMIN = 0.01
     REAL, PARAMETER         :: BGCMIN = 1.0E-4
     REAL                    :: HSDAT, TMDAT, S1DAT, S2DAT
-    REAL                    :: HS, TM, S1, S2, A(NSPEC), E(NK,NTH), CG1(NK)
+    REAL                    :: HS, TM, S1, S2, A(NSPEC), E(NK,NTH)
+    REAL                    :: CG1(NK), FACT(NK)
     REAL                    :: TMAN, HSAN, WTM, WHS, WS, TSEA, USTAN
-    REAL                    :: FACT, HSSEA, FMSEA, FMSEAAN, SEAFR, SEAAN
+    REAL                    :: HSSEA, FMSEA, FMSEAAN, SEAFR, SEAAN
+!/DELETE  REAL                    :: HSPART, FMPART, FRPART
     REAL                    :: UABS, UDIR, DEPTH
     REAL, ALLOCATABLE       :: WP(:,:)
     REAL(KIND=8)            :: XDAT, YDAT, DKM, DIST2KM
+    INTEGER                 :: PMAP(NK,NTH)
+    LOGICAL                 :: SEAMAP(NK,NTH)
 #ifdef W3_MPI
     INTEGER                 :: IERR_MPI
 #endif
@@ -220,7 +224,7 @@ CONTAINS
           A(1:NSPEC) = VA(1:NSPEC, JSEA)
           CALL DA1SPA(A, CG1, HS, TM, S1, S2)
          !WRITE(*,'(2X,A8,4I5,2F7.2,F10.1)') "    MOD", IAPROC, NAPROC, ISEA, JSEA, HS, TM, DKM
-         !WRITE(*,'(2X,A,2F6.2,2F9.6)') "TEST [FC:HS,T01,S,SM]",HS, TM, S1, S2
+!/DELETE !WRITE(*,'(2X,A,2F6.2,2F9.6)') "TEST [FC:HS,T01,S,SM]",HS, TM, S1, S2
     !
     !     a) Calculate background correlation
           SELECT CASE(DA1METHOD)
@@ -243,18 +247,21 @@ CONTAINS
     ! 3.  Actual data assimilation  -------------------------------------- /
     !     a) Convert spectrum A(k,th) to E(f,th) for partitioning
           DO IK=1, NK
-            FACT = TPI * SIG(IK) / CG1(IK)
+            FACT(IK) = SIG(IK) / CG1(IK)
             DO ITH=1, NTH
-              E(IK,ITH) = A(ITH+(IK-1)*NTH) * FACT
+              ISP = ITH+(IK-1)*NTH
+              E(IK,ITH) = A(ISP) * TPI * FACT(IK)
             END DO
           END DO
     !
     !     Initialise wind sea integral parameters
+          HSSEA = UNDEF   ! Significant wave height (model guess)
           FMSEA = UNDEF   ! Mean frequency (model guess)
           FMSEAAN = UNDEF ! Mean frequency (analysis)
           SEAFR = UNDEF   ! Fraction of total significant wave height
           USTAN = UNDEF   ! Friction velocity (analysis)
           TSEA = UNDEF    ! Duration (from growth curve)
+          SEAMAP(1:NK,1:NTH) = .FALSE.
     !
     !     b) Partition wave spectra and find wind sea partition
           UABS = U10(ISEA)*ASF(ISEA)
@@ -265,27 +272,51 @@ CONTAINS
             CALL EXTCDE(99)
           END IF
     !
-          CALL W3PART(E, UABS, UDIR, DEPTH, WN(1:NK,ISEA), NP, WP, DIMXP)
+          CALL W3PART(E, UABS, UDIR, DEPTH, WN(1:NK, ISEA), &
+                      NP, WP, DIMXP, PMAP)
           ! Array WP contains integral parameters describing partitions,
           ! where index 0 contains parameters for entire spectrum.
           DO IP=1, NP
             ! Scan for wind sea part (wind sea fraction >= threshold)
             ! as per default partitioning in W3PART.
+!DELETE     !   AP(1:NSPEC) = 0.0
+!DELETE     !   DO IK=1, NK
+!DELETE     !     DO ITH=1, NTH
+!DELETE     !       ISP = ITH+(IK-1)*NTH
+!DELETE     !       IF (PMAP(IK,ITH).EQ.IP) AP(ISP) = A(ISP)
+!DELETE     !     END DO
+!DELETE     !   END DO
+!DELETE     !   CALL DA1SPA(AP, CG1, HSPART, FMPART, S1, S2)
+!DELETE     !   WRITE(*,'(2X,A,I2,2F6.2)') "PMAP [IP,HS,F01]", &
+!DELETE     !        IP, HSPART, 1./FMPART
+!DELETE     ! HSPART = WP(1, IP)
+!DELETE     ! FMPART = 1.0/WP(13, IP)
+!DELETE     ! FRPART = MIN((HSPART*HSPART)/(WP(1,0)*WP(1,0)), 1.0)
             IF (WP(6,IP).GE.WSCUT) THEN
+              DO IK=1, NK
+                DO ITH=1, NTH
+                  ISP = ITH+(IK-1)*NTH
+                  IF (PMAP(IK,ITH).EQ.IP) SEAMAP(IK,ITH) = .TRUE.
+                END DO
+              END DO
               HSSEA = WP(1, IP)
               FMSEA = 1.0/WP(13, IP) ! mean frequency
               SEAFR = MIN((HSSEA*HSSEA)/(WP(1,0)*WP(1,0)), 1.0)
-            ! WRITE(*,"(A,1X,2I2,2F6.2,2F7.4)") "W3PART", PTMETH, IP,   &
-            !      HSSEA, FMSEA, WP(6,IP), SEAFR
+!DELETE     !   WRITE(*,"(A,10X,2I2,2F6.2,2F7.4,1X,A)") "W3PART",    &
+!DELETE     !       IP, NP, HSSEA, FMSEA, WP(6,IP), SEAFR, "WIND SEA"
+!DELETE     ! ELSE
+!DELETE     !   WRITE(*,"(A,10X,2I2,2F6.2,2F7.4)") "W3PART", IP, NP, &
+!DELETE     !        HSPART, FMPART, WP(6,IP), FRPART
             END IF
           END DO
     !
+          IF ( (DA1SFCUT.LT.0.0 .OR. SEAFR.GT.DA1SFCUT)  &
+               .AND. HSSEA.GT.HSMIN) THEN
     !     c) Estimate duration of wind sea from wind sea analysis
     !        (based on wind sea fraction calculated above)
-          IF (SEAFR.GT.DA1SFCUT .AND. HSSEA.GT.HSMIN) THEN
+            CALL WSDUR(UST(ISEA), HSSEA, TSEA)
             ! Wind sea analysis based on wind sea fraction (from b)
             SEAAN = 4.0 * SQRT(SEAFR*(HSAN/4)*(HSAN/4))
-            CALL WSDUR(UST(ISEA), HSSEA, TSEA)
     !
     !     d) Estimate analysis friction velocity and
     !        analysis mean frequency of wind sea
@@ -295,17 +326,25 @@ CONTAINS
           END IF
     !
     !     e) Update spectrum by stretching and scaling
-          CALL UPSPEC(A, CG1, HS, HSAN, FMSEA, FMSEAAN)
-         !CALL DA1SPA(A, CG1, HS, TM, S1, S2)
-         !WRITE(*,'(2X,A,2F6.2,2F9.6)') "TEST [AN:HS,T01,S,SM]", &
-         !    HS, TM, S1, S2
+          IF (DA1SFCUT.GE.0) THEN
+            CALL UPSPEC(A, FACT, HS, HSAN, FMSEA, FMSEAAN)
+          ELSE
+            CALL UPSPART(A, FACT, HS, HSAN, FMSEA, FMSEAAN, SEAMAP)
+          END IF
+!DELETE   !/ SCALE ONLY: A(1:NSPEC) = VA(1:NSPEC, JSEA)*(WHS*WHS)
+!DELETE   !CALL DA1SPA(A, CG1, HS, TM, S1, S2)
+!DELETE   !WRITE(*,'(2X,A,2F6.2,2F9.6)') "TEST [AN:HS,T01,S,SM]", &
+!DELETE   !    HS, TM, S1, S2
+!DELETE   !CALL DA1SPA(AP, CG1, HS, TM, S1, S2)
+!DELETE   !WRITE(*,'(2X,A,2F6.2,2F9.6)') "TEST2[AN:HS,T01,S,SM]", &
+!DELETE   !    HS, TM, S1, S2
     !
     ! 4.  Copy assimilated spectrum back to data structure --------------- /
           VA(1:NSPEC, JSEA) = A(1:NSPEC)
     !
          !IF (IAPROC .EQ. DATPROC) THEN
          !  CALL DA1SPA(VA(1:NSPEC, JSEA), CG1, HS, TM, S1, S2)
-         !  WRITE(*,'(2X,A8,4I6,2F7.2,E10.3)') "DATPROC", IAPROC, DATPROC, ISEA, JSEA, HS, TM, WSTP
+         !  WRITE(*,'(2X,A8,4I6,2F7.2,E10.3)') "DATPROC", IAPROC, DATPROC, ISEA, JSEA, HS, TM
          !END IF !/ IAPROC == DATPROC
         END IF !/ (DKM .LT. DA1MAXDKM)
       END DO !/ JSEA..NSEAL
@@ -495,7 +534,6 @@ CONTAINS
     IMPLICIT NONE
     REAL, INTENT(IN)   :: WS, HSWW3, HSBOUY, HSWW3b, TMBOUY, TMWW3b
     REAL, INTENT(OUT)  :: WTMAN, WHSAN, TMAN, HSAN
-    REAL, PARAMETER    :: HSMIN = 0.01
     REAL               :: TMWW3
     !
     WHSAN = 1.0
@@ -577,7 +615,7 @@ CONTAINS
   !>     third-generation wave model", JGR, 97(9), 14,453-14,474
   !>
   !> @param[inout] A    Action density spectrum A(k,theta)
-  !> @param[in] CG      Group velocities
+  !> @param[in] FACT    Jacobians for spectral conversion (wn to sigma)
   !> @param[in] HS      Significant wave height (model guess)
   !> @param[in] HSAN    Analysis significant wave height
   !> @param[in] FM      Wind sea mean frequency (model guess)
@@ -585,18 +623,18 @@ CONTAINS
   !>
   !> @author  @date
   !>
-  SUBROUTINE UPSPEC ( A, CG, HS, HSAN, FM, FMAN )
+  SUBROUTINE UPSPEC ( A, FACT, HS, HSAN, FM, FMAN )
   !/
     USE W3GDATMD, ONLY: NSPEC, NK, NTH, SIG, XFR
   !/
     IMPLICIT NONE
     REAL, INTENT(INOUT) :: A(NSPEC)
-    REAL, INTENT(IN)    :: HS, HSAN, FM, FMAN, CG(NK)
+    REAL, INTENT(IN)    :: HS, HSAN, FM, FMAN, FACT(NK)
     INTEGER             :: IK, ITH, I1, I2, IKTH
     REAL, PARAMETER     :: FMCUT = 2.0E-2
     REAL                :: XHS, XR, XB, XL
     REAL                :: AUP(NSPEC), A1, A2
-    REAL                :: SU, DSU, DELTA, FACT(NK)
+    REAL                :: SU, DSU, DELTA
   !/
     XHS = HSAN / HS
   !/
@@ -614,11 +652,6 @@ CONTAINS
   !/
     AUP(1:NSPEC) = 0.0
     XL = ALOG(XFR)
-  !/
-    DO IK = 1, NK
-      ! Jacobians for spectral conversion (wavenumber to sigma)
-      FACT(IK) = SIG(IK) / CG(IK)
-    END DO
   !/
     DO IK = 1, NK
       SU = SIG(IK) * XB
@@ -642,6 +675,109 @@ CONTAINS
   END SUBROUTINE UPSPEC
   !/ ------------------------------------------------------------------- /
   !>
+  !> @brief Modify spectrum by stretching and scaling following
+  !>        method by Lionello et al. (1992). A new spectrum FN is
+  !>        build from spectrum F in the form of
+  !>             FN(sigma,theta) = A F(B*sigma,theta)
+  !>
+  !>        The swell partitions in the spectrum are updated using the
+  !>        steepness criteria with a small correction applied:
+  !>             DELTA=1-.006*(HSAN-HS)
+  !>             A = DELTA*(ETAN/ETOT)**1.25
+  !>             B = DELTA*(ETAN/ETOT)**.25
+  !>        The wind sea part of the soectrum is adjusted with
+  !>             B = FMSEA/FMSEAAN
+  !>             A = (ETAN/ETOT)*B
+  !>
+  !> Lionello et al. (1992): "Assimilation of altimeter data in a global
+  !>     third-generation wave model", JGR, 97(9), 14,453-14,474
+  !>
+  !> @param[inout] A    Action density spectrum A(k,theta)
+  !> @param[in] FACT    Jacobians for spectral conversion (wn to sigma)
+  !> @param[in] HS      Significant wave height (model guess)
+  !> @param[in] HSAN    Analysis significant wave height
+  !> @param[in] FM      Wind sea mean frequency (model guess)
+  !> @param[in] FMAN    Analysis of wind sea mean frequency
+  !> @param[in] SEAMAP  Map with wind sea partition from W3PART (logical)
+  !>
+  !> @author  @date
+  !>
+  SUBROUTINE UPSPART ( A, FACT, HS, HSAN, FM, FMAN, SEAMAP )
+  !/
+    USE W3GDATMD, ONLY: NSPEC, NK, NTH, SIG, XFR
+  !/
+    IMPLICIT NONE
+    REAL, INTENT(INOUT) :: A(NSPEC)
+    REAL, INTENT(IN)    :: HS, HSAN, FM, FMAN, FACT(NK)
+    LOGICAL, INTENT(IN) :: SEAMAP(NK,NTH)
+    INTEGER             :: IK, ITH, I1, I2, IKTH
+    REAL, PARAMETER     :: FMCUT = 2.0E-2
+    REAL                :: XHS, XR, XB, XL
+    REAL                :: ASWL, BSWL, ASEA, BSEA
+    REAL                :: AUP(NSPEC), A1, A2
+    REAL                :: SU, DSU, DELTA
+  !/
+    XHS = HSAN / HS
+  !/
+  !/Setup coefficients for swell
+    DELTA = 1.0 - 6.0E-3 * (HSAN - HS)
+    ASWL = DELTA * (XHS**(2.5))
+    BSWL = DELTA * SQRT(XHS)
+  !/ and  for wind sea
+    BSEA = 1.00
+    IF (FM.GT.FMCUT .AND. FMAN.GT.FMCUT)  BSEA = FM / FMAN
+    ASEA = (XHS * XHS) * BSEA
+  !/
+    AUP(1:NSPEC) = 0.0
+    XL = ALOG(XFR)
+  !/
+    ! Wind sea correction
+    XB = BSEA
+    XR = ASEA
+    DO IK = 1, NK
+      SU = SIG(IK) * XB
+      I1 = INT(ALOG(SU / SIG(1)) / XL) + 1
+      I2 = I1 + 1
+      IF (1.LE.I1 .AND. I2.LE.NK) THEN
+        DSU = (SU - SIG(I1)) / (SIG(I2) - SIG(I1))
+        DO ITH=1, NTH
+          IF ( SEAMAP(IK, ITH) ) THEN
+            A1 = A(ITH + (I1-1)*NTH) * FACT(I1)
+            A2 = A(ITH + (I2-1)*NTH) * FACT(I2)
+            DELTA = DSU * (A2-A1)
+            IKTH = ITH + (IK-1)*NTH
+            AUP(IKTH) = MAX(0.0, A1 + DELTA) * (XR / FACT(IK))
+          END IF
+        END DO
+      END IF
+    END DO
+    !
+    ! Swell correction
+    XB = BSWL
+    XR = ASWL
+    DO IK = 1, NK
+      SU = SIG(IK) * XB
+      I1 = INT(ALOG(SU / SIG(1)) / XL) + 1
+      I2 = I1 + 1
+      IF (1.LE.I1 .AND. I2.LE.NK) THEN
+        DSU = (SU - SIG(I1)) / (SIG(I2) - SIG(I1))
+        DO ITH=1, NTH
+          IF ( .NOT. SEAMAP(IK, ITH) ) THEN
+            A1 = A(ITH + (I1-1)*NTH) * FACT(I1)
+            A2 = A(ITH + (I2-1)*NTH) * FACT(I2)
+            DELTA = DSU * (A2-A1)
+            IKTH = ITH + (IK-1)*NTH
+            AUP(IKTH) = MAX(0.0, A1 + DELTA) * (XR / FACT(IK))
+          END IF
+        END DO
+      END IF
+    END DO
+  !/
+    A(1:NSPEC) = AUP(1:NSPEC)
+  !/
+  END SUBROUTINE UPSPART
+  !/ ------------------------------------------------------------------- /
+  !>
   !> @brief Find duration (time) form model estimate of the
   !>        wind sea partition (first guess) using nondimensional
   !>        growth curves (i.e., energy-duration)
@@ -661,20 +797,22 @@ CONTAINS
   !>
   SUBROUTINE WSDUR (UST, HS, T)
     !/
-    USE CONSTANTS, ONLY: GRAV
+    USE CONSTANTS, ONLY: GRAV, UNDEF
     !/
     IMPLICIT NONE
     REAL, INTENT(IN)  :: UST, HS
     REAL, INTENT(OUT) :: T
     REAL              :: E, EST, TST
     !
-    E = (HS/4)*(HS/4)
-    EST = E * GRAV * GRAV / (UST**4) ! n.d. energy
-    TST = MIN(EST / ET, 0.999999)    ! n.d. time
-    TST = (1.0 + TST) / (1.0 - TST)
-    TST = (0.5 * ALOG(TST) / AT)**(1.0 / BT)
-    !
-    T = TST * UST / GRAV
+    T = UNDEF
+    IF (HS.GT.HSMIN) THEN
+      E = (HS*HS) / 16.0
+      EST = E * GRAV * GRAV / (UST**4)
+      TST = MIN(EST / ET, 0.999999)
+      TST = (1.0 + TST) / (1.0 - TST)
+      TST = (0.5 * ALOG(TST) / AT)**(1.0 / BT)
+      T = TST * UST / GRAV
+    END IF
     !
     RETURN
     !
@@ -703,7 +841,7 @@ CONTAINS
   !>
   SUBROUTINE WSANA (UST, T, HSAN, USTAN, FMAN)
     !/
-    USE CONSTANTS, ONLY: GRAV
+    USE CONSTANTS, ONLY: GRAV, UNDEF
     !/
     IMPLICIT NONE
     REAL, INTENT(IN)  :: UST, T, HSAN
@@ -712,29 +850,31 @@ CONTAINS
     REAL, PARAMETER   :: ATOL = 1.0E-8
     INTEGER, PARAMETER :: ITERMAX = 12
     INTEGER           :: I
-    REAL              :: E, EST, FST, T2, X2, RI, INC
+    REAL              :: EAN, EST, FST, T2, X2, RI, INC
     !
-    FMAN = -999.9
+    FMAN = UNDEF
     USTAN = UST
-    E = (HSAN/4)*(HSAN/4)
+    EAN = (HSAN*HSAN) / 16.0
     INC = 1.0
     !
     DO I=1, ITERMAX
       X2 = AT*(GRAV * T / USTAN)**BT
       IF (X2.GE.2.0) THEN
-        USTAN = (E * GRAV * GRAV / ET)**(0.25)
+        USTAN = (EAN * GRAV * GRAV / ET)**(0.25)
       ELSE
         T2 = TANH(X2)
-        RI = E * GRAV * GRAV / (USTAN**4) / ET
+        RI = EAN * GRAV * GRAV / (USTAN**4) / ET
         INC = 1.0 - ((RI-T2)/(BT*X2*(1.0-T2*T2)-4.0*T2))
+        USTAN = USTAN * INC
+        IF (ISCLOSE(INC, 1.00000, RTOL, ATOL)) EXIT
       END IF
-      IF (ISCLOSE(INC, 1.00000, RTOL, ATOL)) EXIT
-      USTAN = USTAN * INC
     END DO
     !
-    EST = E * GRAV * GRAV / (USTAN**4)
-    FST = (EST / AF)**(1.0 / BF)
-    FMAN = FST * GRAV / USTAN
+    IF (UST.GT.0) THEN
+      EST = EAN * GRAV * GRAV / (USTAN**4) ! E* (nondimensional energy)
+      FST = (EST / AF)**(1.0 / BF)  ! f* (nondimensional frequency)
+      FMAN = FST * GRAV / USTAN     ! frequency
+    END IF
     !
     RETURN
     !

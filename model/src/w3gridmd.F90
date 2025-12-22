@@ -3038,24 +3038,22 @@ CONTAINS
     CALL READNL ( NDSS, 'WDA1', STATUS )
     DA1METHOD = METHOD
     DA1MAXDKM = MAXDKM
-    DA1SFCUT = SEAFCUT
+    DA1SFCUT = MIN(SEAFCUT, 1.0)
     WRITE (NDSO,9240) STATUS
+    J = 2
+    IF (DA1SFCUT.GE.0.0)  J = 1
     SELECT CASE(DA1METHOD)
       CASE(0)
         WRITE (NDSO,9250) DA1MAXDKM,              &
-            "Voorrips et al. (1997)", DA1SFCUT
+            "Voorrips et al. (1997)", YESXNO(J), DA1SFCUT
       CASE(1)
         WRITE (NDSO,9250) DA1MAXDKM,              &
-            "Greenslade and Young (2004)", DA1SFCUT
+            "Greenslade and Young (2004)", YESXNO(J), DA1SFCUT
       CASE DEFAULT
-        WRITE (NDSE,1060)
+        WRITE (NDSE,1060) DA1METHOD
         CALL EXTCDE ( 31 )
     END SELECT
     IF (DA1MAXDKM.LE.0.0 .OR. DA1MAXDKM.GT.10.E3) THEN
-      WRITE (NDSE,1065)
-      CALL EXTCDE ( 31 )
-    END IF
-    IF (DA1SFCUT.LT.0.0 .OR. DA1SFCUT.GT.1.0) THEN
       WRITE (NDSE,1070)
       CALL EXTCDE ( 31 )
     END IF
@@ -6850,6 +6848,7 @@ CONTAINS
          ' --------------------------------------------------')
 9250 FORMAT ( '        maximum distance (km): ', F7.1/,  &
               '   spatial correlation scheme: ', A/,     &
+              '   Cut-off based assimilation: ', A/,     &
               '    wind sea fraction cut-off: ', F7.3 )
 #endif
     !
@@ -7206,13 +7205,11 @@ CONTAINS
 #endif
 #ifdef W3_DA1
 1060 FORMAT (/' *** WAVEWATCH III ERROR IN W3GRID :'/                &
-         '     WITH NAMELIST VALUE &WDA1 METHOD, MUST BE [0,1]' )
-1065 FORMAT (/' *** WAVEWATCH III ERROR IN W3GRID :'/                &
+         '     WITH NAMELIST VALUE &WDA1 METHOD=',I2,/&
+         '     ACCEPTED VALUES: [0,1]')
+1070 FORMAT (/' *** WAVEWATCH III ERROR IN W3GRID :'/                &
          '     WITH NAMELIST VALUE &WDA1 MAXDKM;'/                   &
          '     VALID RANGE: [0,10E3]')
-1070 FORMAT (/' *** WAVEWATCH III ERROR IN W3GRID :'/                &
-         '     WITH NAMELIST VALUE &WDA1 SEAFCUT;'/                  &
-         '     VALID RANGE: [0.0,1.0]')
 #endif
     !
 1040 FORMAT ( '       Space-time extremes DX      :',F10.2)

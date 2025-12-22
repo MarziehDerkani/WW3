@@ -131,24 +131,27 @@ CONTAINS
   !> @param[out]   XP      Parameters describing partitions.
   !>                       Entry '0' contains entire spectrum
   !> @param[in]    DIMXP   Second dimension of XP
+  !> @param[out]   IMOUT   Partition map in order of parameter
+  !>                       index XP (optional)
   !>
   !> @author Barbara Tracey, H. L. Tolman, M. Szyszka, Chris Bunney
-  !> @date 23 Jul 2018
+  !> @date 19 Dec 2025
   !>
-  SUBROUTINE W3PART ( SPEC, UABS, UDIR, DEPTH, WN, NP, XP, DIMXP )
+  SUBROUTINE W3PART ( SPEC, UABS, UDIR, DEPTH, WN, NP, XP, DIMXP, IMOUT )
     !/
     !/                  +-----------------------------------+
     !/                  | WAVEWATCH III          USACE/NOAA |
     !/                  |          Barbara  Tracy           |
     !/                  |           H. L. Tolman            |
     !/                  |                        FORTRAN 90 |
-    !/                  | Last update :         02-Dec-2010 !
+    !/                  | Last update :         19-Dec-2025 !
     !/                  +-----------------------------------+
     !/
     !/    28-Oct-2006 : Origination.                       ( version 3.10 )
     !/    02-Dec-2010 : Adding a mapping PMAP between      ( version 3.14 )
     !/                  original and combined partitions
     !/                  ( M. Szyszka )
+    !/    19-Dec-2025 : Partition map in order of XP index ( version 7.14 )
     !/
     !  1. Purpose :
     !
@@ -175,6 +178,8 @@ CONTAINS
     !       XP      R.A.   O   Parameters describing partitions.
     !                          Entry '0' contains entire spectrum.
     !       DIMXP   Int.   I   Second dimension of XP.
+    !       IMOUT   R.A.   O   Partition map in order of XP w/ dimensions
+    !                          of SPEC (optional argument)
     !     ----------------------------------------------------------------
     !
     !  4. Subroutines used :
@@ -239,6 +244,7 @@ CONTAINS
     REAL, INTENT(IN)              :: SPEC(NK,NTH), WN(NK), UABS,    &
          UDIR, DEPTH
     REAL, INTENT(OUT)             :: XP(DIMP,0:DIMXP)
+    INTEGER, OPTIONAL, INTENT(OUT):: IMOUT(NK,NTH)
     !/
     !/ ------------------------------------------------------------------- /
     !/ Local parameters
@@ -246,7 +252,7 @@ CONTAINS
     INTEGER                 :: ITH, IMI(NSPEC), IMD(NSPEC),         &
          IMO(NSPEC), IND(NSPEC), NP_MAX,      &
          IP, IT(1), INDEX(DIMXP), NWS,        &
-         IPW, IPT, ISP
+         IPW, IPT, ISP, IMAP(DIMXP)
     INTEGER                 :: PMAP(DIMXP)
 #ifdef W3_S
     INTEGER, SAVE           :: IENT = 0
@@ -266,6 +272,7 @@ CONTAINS
     !
     NP     = 0
     XP     = 0.
+    IF (PRESENT(IMOUT)) IMOUT(1:NK,1:NTH) = 0
     !
     ! -------------------------------------------------------------------- /
     ! 1.  Process input spectrum
@@ -305,6 +312,18 @@ CONTAINS
            NP, XP, DIMXP, PMAP )
 
       ! No more processing required, return:
+      IF (PRESENT(IMOUT)) THEN
+        DO IP=1, NP
+          IPT = PMAP(IP)
+          DO ISP=1, NSPEC
+            IF (IMO(ISP).EQ.IPT) IMO(ISP) = -IP
+          END DO
+        END DO
+        DO ITH=1, NTH
+          IMOUT(1:NK,ITH) = ABS(IMO(1+(ITH-1)*NK:ITH*NK))
+        END DO
+      END IF
+
       RETURN
     ENDIF ! PTMETH == 4
     !
@@ -335,6 +354,18 @@ CONTAINS
            NP, XP, DIMXP, PMAP )
 
       ! No more processing required, return:
+      IF (PRESENT(IMOUT)) THEN
+        DO IP=1, NP
+          IPT = PMAP(IP)
+          DO ISP=1, NSPEC
+            IF (IMO(ISP).EQ.IPT) IMO(ISP) = -IP
+          END DO
+        END DO
+        DO ITH=1, NTH
+          IMOUT(1:NK,ITH) = ABS(IMO(1+(ITH-1)*NK:ITH*NK))
+        END DO
+      END IF
+
       RETURN
     ENDIF ! PTMETH == 5
     !
@@ -404,6 +435,7 @@ CONTAINS
     ! 3.  Sort and recombine wind seas as needed
     ! 3.a Sort by wind sea fraction
     !
+    IF (NP.EQ.1.AND.PRESENT(IMOUT)) IMOUT(1:NK,1:NTH) = 1
     IF ( NP .LE. 1 ) RETURN
 
     ! -----------------------------------------------------------------
@@ -412,13 +444,27 @@ CONTAINS
     ! -----------------------------------------------------------------
     IF( PTMETH .EQ. 3 ) THEN
       TP(:,1:NP)  = XP(:,1:NP)
+      IMAP(1:NP)  = PMAP(1:NP)
       XP(:,1:NP)  = 0.
 
       DO IP=1, NP
         IT          = MAXLOC(TP(1,1:NP))
         XP(:,IP)    = TP(:,IT(1))
+        PMAP(IP)    = IMAP(IT(1))
         TP(1,IT(1)) = -1.
       END DO
+      !
+      IF (PRESENT(IMOUT)) THEN
+        DO IP=1, NP
+          IPT = PMAP(IP)
+          DO ISP=1, NSPEC
+            IF (IMO(ISP).EQ.IPT) IMO(ISP) = -IP
+          END DO
+        END DO
+        DO ITH=1, NTH
+          IMOUT(1:NK,ITH) = ABS(IMO(1+(ITH-1)*NK:ITH*NK))
+        END DO
+      END IF
 
       RETURN ! Don't process any further
     ENDIF ! PTMETH == 3
@@ -452,9 +498,11 @@ CONTAINS
       !
       CALL PTMEAN ( NP_MAX, IMO, ZP, DEPTH, UABS, UDIR, WN,       &
            NP, XP, DIMXP, PMAP )
+      IF (NP.EQ.1.AND.PRESENT(IMOUT)) IMOUT(1:NK,1:NTH) = 1
       IF ( NP .LE. 1 ) RETURN
       !
       TP(:,1:NP)  = XP(:,1:NP)
+      IMAP(1:NP)  = PMAP(1:NP)
       XP(:,1:NP)  = 0.
       INDEX(1:NP) = 0
       NWS         = 0
@@ -463,6 +511,7 @@ CONTAINS
         IT          = MAXLOC(TP(6,1:NP))
         INDEX(IP)   = IT(1)
         XP(:,IP)    = TP(:,INDEX(IP))
+        PMAP(IP)    = IMAP(INDEX(IP))
         IF ( TP(6,IT(1)) .GE. WSCUT ) NWS = NWS + 1
         TP(6,IT(1)) = -1.
       END DO
@@ -474,6 +523,7 @@ CONTAINS
     NWS    = MIN ( 1 , NWS )
     !
     TP(:,1:NP)  = XP(:,1:NP)
+    IMAP(1:NP)  = PMAP(1:NP)
     XP(:,1:NP)  = 0.
     !
     IF ( NWS .GT. 0 ) THEN
@@ -485,8 +535,23 @@ CONTAINS
     DO IP=NWS+1, NP
       IT          = MAXLOC(TP(1,1:NP))
       XP(:,IP)    = TP(:,IT(1))
+      PMAP(IP)    = IMAP(IT(1))
       TP(1,IT(1)) = -1.
     END DO
+    !
+    ! 3.d Update index map IMO in sort order parameter array XP
+    !
+    IF (PRESENT(IMOUT)) THEN
+      DO IP=1, NP
+        IPT = PMAP(IP)
+        DO ISP=1, NSPEC
+          IF (IMO(ISP).EQ.IPT) IMO(ISP) = -IP
+        END DO
+      END DO
+      DO ITH=1, NTH
+        IMOUT(1:NK,ITH) = ABS(IMO(1+(ITH-1)*NK:ITH*NK))
+      END DO
+    END IF
     !
     ! -------------------------------------------------------------------- /
     ! 4.  End of routine
