@@ -630,7 +630,7 @@ CONTAINS
     IMPLICIT NONE
     REAL, INTENT(INOUT) :: A(NSPEC)
     REAL, INTENT(IN)    :: HS, HSAN, FM, FMAN, FACT(NK)
-    INTEGER             :: IK, ITH, I1, I2, IKTH
+    INTEGER             :: IK, ITH, I1, I2, ISP
     REAL, PARAMETER     :: FMCUT = 2.0E-2
     REAL                :: XHS, XR, XB, XL
     REAL                :: AUP(NSPEC), A1, A2
@@ -663,9 +663,9 @@ CONTAINS
           A1 = A(ITH + (I1-1)*NTH) * FACT(I1)
           A2 = A(ITH + (I2-1)*NTH) * FACT(I2)
           DELTA = DSU * (A2-A1)
-          IKTH = ITH + (IK-1)*NTH
+          ISP = ITH + (IK-1)*NTH
           ! scale and transform back
-          AUP(IKTH) = MAX(0.0, A1 + DELTA) * (XR / FACT(IK))
+          AUP(ISP) = MAX(0.0, A1 + DELTA) * (XR / FACT(IK))
         END DO
       END IF
     END DO
@@ -710,7 +710,7 @@ CONTAINS
     REAL, INTENT(INOUT) :: A(NSPEC)
     REAL, INTENT(IN)    :: HS, HSAN, FM, FMAN, FACT(NK)
     LOGICAL, INTENT(IN) :: SEAMAP(NK,NTH)
-    INTEGER             :: IK, ITH, I1, I2, IKTH
+    INTEGER             :: IK, ITH, I1, I2, ISP
     REAL, PARAMETER     :: FMCUT = 2.0E-2
     REAL                :: XHS, XR, XB, XL
     REAL                :: ASWL, BSWL, ASEA, BSEA
@@ -745,8 +745,8 @@ CONTAINS
             A1 = A(ITH + (I1-1)*NTH) * FACT(I1)
             A2 = A(ITH + (I2-1)*NTH) * FACT(I2)
             DELTA = DSU * (A2-A1)
-            IKTH = ITH + (IK-1)*NTH
-            AUP(IKTH) = MAX(0.0, A1 + DELTA) * (XR / FACT(IK))
+            ISP = ITH + (IK-1)*NTH
+            AUP(ISP) = MAX(0.0, A1 + DELTA) * (XR / FACT(IK))
           END IF
         END DO
       END IF
@@ -766,8 +766,8 @@ CONTAINS
             A1 = A(ITH + (I1-1)*NTH) * FACT(I1)
             A2 = A(ITH + (I2-1)*NTH) * FACT(I2)
             DELTA = DSU * (A2-A1)
-            IKTH = ITH + (IK-1)*NTH
-            AUP(IKTH) = MAX(0.0, A1 + DELTA) * (XR / FACT(IK))
+            ISP = ITH + (IK-1)*NTH
+            AUP(ISP) = MAX(0.0, A1 + DELTA) * (XR / FACT(IK))
           END IF
         END DO
       END IF
