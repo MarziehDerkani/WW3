@@ -24,15 +24,20 @@ MODULE W3WDA1MD
     REAL, PARAMETER :: HSMIN = 0.01
   !/ Constants for duration limited energy growth (nondimensional)
   !/      E* = ET tanh( AT (t*)**BT )
-    REAL, PARAMETER :: ET = 955.0
-    REAL, PARAMETER :: AT = 6.02E-5
-    REAL, PARAMETER :: BT = 0.695
+  !/REAL, PARAMETER :: ET = 955.0  ! Lionello et al. (1992)
+  !/REAL, PARAMETER :: AT = 6.02E-5
+  !/REAL, PARAMETER :: BT = 0.695
+    REAL, PARAMETER :: ET = 1315.0  ! ST6-consistent
+    REAL, PARAMETER :: AT = 5.65E-6
+    REAL, PARAMETER :: BT = 0.820
   !/ Constants for frequency energy growth (nondimensional)
   !/      E* = AF (f*)**BF
   !/REAL, PARAMETER :: AF = 1.68E-4  ! Lionello et al. (1992)
   !/REAL, PARAMETER :: BF = -3.27
-    REAL, PARAMETER :: AF = 5.054E-4 ! Toledano et al. (2022)
-    REAL, PARAMETER :: BF = -2.959
+  !/REAL, PARAMETER :: AF = 5.054E-4 ! Toledano et al. (2022)
+  !/REAL, PARAMETER :: BF = -2.959
+    REAL, PARAMETER :: AF = 5.956E-4 ! ST6-consistent
+    REAL, PARAMETER :: BF = -2.872
   !/
 CONTAINS
   !/ ------------------------------------------------------------------- /
@@ -325,13 +330,14 @@ CONTAINS
             FMSEA = UNDEF
           END IF
     !
-    !     e) Update spectrum by stretching and scaling
-          IF (DA1SFCUT.GE.0) THEN
+    !     e) Update spectrum by stretching and/or scaling
+          IF (DA1SFCUT.GE.0.0 .AND. DA1SFCUT.LE.1.0) THEN
             CALL UPSPEC(A, FACT, HS, HSAN, FMSEA, FMSEAAN)
-          ELSE
+          ELSEIF (DA1SFCUT.LT.0.0) THEN
             CALL UPSPART(A, FACT, HS, HSAN, FMSEA, FMSEAAN, SEAMAP)
+          ELSE
+            A(1:NSPEC) = VA(1:NSPEC, JSEA)*(WHS*WHS)
           END IF
-!DELETE   !/ SCALE ONLY: A(1:NSPEC) = VA(1:NSPEC, JSEA)*(WHS*WHS)
 !DELETE   !CALL DA1SPA(A, CG1, HS, TM, S1, S2)
 !DELETE   !WRITE(*,'(2X,A,2F6.2,2F9.6)') "TEST [AN:HS,T01,S,SM]", &
 !DELETE   !    HS, TM, S1, S2
@@ -685,7 +691,7 @@ CONTAINS
   !>             DELTA=1-.006*(HSAN-HS)
   !>             A = DELTA*(ETAN/ETOT)**1.25
   !>             B = DELTA*(ETAN/ETOT)**.25
-  !>        The wind sea part of the soectrum is adjusted with
+  !>        The wind sea part of the spectrum is adjusted with
   !>             B = FMSEA/FMSEAAN
   !>             A = (ETAN/ETOT)*B
   !>
