@@ -24,20 +24,20 @@ MODULE W3WDA1MD
     REAL, PARAMETER :: HSMIN = 0.01
   !/ Constants for duration limited energy growth (nondimensional)
   !/      E* = ET tanh( AT (t*)**BT )
-  !/REAL, PARAMETER :: ET = 955.0  ! Lionello et al. (1992)
-  !/REAL, PARAMETER :: AT = 6.02E-5
-  !/REAL, PARAMETER :: BT = 0.695
-    REAL, PARAMETER :: ET = 1315.0  ! ST6-consistent
-    REAL, PARAMETER :: AT = 5.65E-6
-    REAL, PARAMETER :: BT = 0.820
+    REAL, PARAMETER :: ET = 955.0  ! Lionello et al. (1992)
+    REAL, PARAMETER :: AT = 6.02E-5
+    REAL, PARAMETER :: BT = 0.695
+  !/REAL, PARAMETER :: ET = 1315.0  ! ST6-consistent
+  !/REAL, PARAMETER :: AT = 5.65E-6
+  !/REAL, PARAMETER :: BT = 0.820
   !/ Constants for frequency energy growth (nondimensional)
   !/      E* = AF (f*)**BF
-  !/REAL, PARAMETER :: AF = 1.68E-4  ! Lionello et al. (1992)
-  !/REAL, PARAMETER :: BF = -3.27
+    REAL, PARAMETER :: AF = 1.68E-4  ! Lionello et al. (1992)
+    REAL, PARAMETER :: BF = -3.27
   !/REAL, PARAMETER :: AF = 5.054E-4 ! Toledano et al. (2022)
   !/REAL, PARAMETER :: BF = -2.959
-    REAL, PARAMETER :: AF = 5.956E-4 ! ST6-consistent
-    REAL, PARAMETER :: BF = -2.872
+  !/REAL, PARAMETER :: AF = 5.956E-4 ! ST6-consistent
+  !/REAL, PARAMETER :: BF = -2.872
   !/
 CONTAINS
   !/ ------------------------------------------------------------------- /
@@ -229,7 +229,6 @@ CONTAINS
           A(1:NSPEC) = VA(1:NSPEC, JSEA)
           CALL DA1SPA(A, CG1, HS, TM, S1, S2)
          !WRITE(*,'(2X,A8,4I5,2F7.2,F10.1)') "    MOD", IAPROC, NAPROC, ISEA, JSEA, HS, TM, DKM
-!/DELETE !WRITE(*,'(2X,A,2F6.2,2F9.6)') "TEST [FC:HS,T01,S,SM]",HS, TM, S1, S2
     !
     !     a) Calculate background correlation
           SELECT CASE(DA1METHOD)
@@ -284,19 +283,6 @@ CONTAINS
           DO IP=1, NP
             ! Scan for wind sea part (wind sea fraction >= threshold)
             ! as per default partitioning in W3PART.
-!DELETE     !   AP(1:NSPEC) = 0.0
-!DELETE     !   DO IK=1, NK
-!DELETE     !     DO ITH=1, NTH
-!DELETE     !       ISP = ITH+(IK-1)*NTH
-!DELETE     !       IF (PMAP(IK,ITH).EQ.IP) AP(ISP) = A(ISP)
-!DELETE     !     END DO
-!DELETE     !   END DO
-!DELETE     !   CALL DA1SPA(AP, CG1, HSPART, FMPART, S1, S2)
-!DELETE     !   WRITE(*,'(2X,A,I2,2F6.2)') "PMAP [IP,HS,F01]", &
-!DELETE     !        IP, HSPART, 1./FMPART
-!DELETE     ! HSPART = WP(1, IP)
-!DELETE     ! FMPART = 1.0/WP(13, IP)
-!DELETE     ! FRPART = MIN((HSPART*HSPART)/(WP(1,0)*WP(1,0)), 1.0)
             IF (WP(6,IP).GE.WSCUT) THEN
               DO IK=1, NK
                 DO ITH=1, NTH
@@ -307,43 +293,35 @@ CONTAINS
               HSSEA = WP(1, IP)
               FMSEA = 1.0/WP(13, IP) ! mean frequency
               SEAFR = MIN((HSSEA*HSSEA)/(WP(1,0)*WP(1,0)), 1.0)
-!DELETE     !   WRITE(*,"(A,10X,2I2,2F6.2,2F7.4,1X,A)") "W3PART",    &
-!DELETE     !       IP, NP, HSSEA, FMSEA, WP(6,IP), SEAFR, "WIND SEA"
-!DELETE     ! ELSE
-!DELETE     !   WRITE(*,"(A,10X,2I2,2F6.2,2F7.4)") "W3PART", IP, NP, &
-!DELETE     !        HSPART, FMPART, WP(6,IP), FRPART
             END IF
           END DO
     !
-          IF ( (DA1SFCUT.LT.0.0 .OR. SEAFR.GT.DA1SFCUT)  &
-               .AND. HSSEA.GT.HSMIN) THEN
-    !     c) Estimate duration of wind sea from wind sea analysis
-    !        (based on wind sea fraction calculated above)
-            CALL WSDUR(UST(ISEA), HSSEA, TSEA)
-            ! Wind sea analysis based on wind sea fraction (from b)
-            SEAAN = 4.0 * SQRT(SEAFR*(HSAN/4)*(HSAN/4))
+          IF (DA1SFCUT.GT.(UNDEF+0.1)) THEN
+            IF ( (DA1SFCUT.LT.0.0 .OR. SEAFR.GT.DA1SFCUT)  &
+                 .AND. HSSEA.GT.HSMIN) THEN
+    !       c) Estimate duration of wind sea from wind sea analysis
+    !          (based on wind sea fraction calculated above)
+              CALL WSDUR(UST(ISEA), HSSEA, TSEA)
+              ! Wind sea analysis based on wind sea fraction (from b)
+              SEAAN = 4.0 * SQRT(SEAFR*(HSAN/4)*(HSAN/4))
     !
-    !     d) Estimate analysis friction velocity and
-    !        analysis mean frequency of wind sea
-            CALL WSANA(UST(ISEA), TSEA, SEAAN, USTAN, FMSEAAN)
-          ELSE
-            FMSEA = UNDEF
-          END IF
+    !       d) Estimate analysis friction velocity and
+    !          analysis mean frequency of wind sea
+              CALL WSANA(UST(ISEA), TSEA, SEAAN, USTAN, FMSEAAN)
+            ELSE
+              FMSEA = UNDEF
+            END IF
     !
-    !     e) Update spectrum by stretching and/or scaling
-          IF (DA1SFCUT.GE.0.0 .AND. DA1SFCUT.LE.1.0) THEN
-            CALL UPSPEC(A, FACT, HS, HSAN, FMSEA, FMSEAAN)
-          ELSEIF (DA1SFCUT.LT.0.0) THEN
-            CALL UPSPART(A, FACT, HS, HSAN, FMSEA, FMSEAAN, SEAMAP)
+    !       e) Update spectrum by stretching and/or scaling
+            IF (DA1SFCUT.GE.0.0 .AND. DA1SFCUT.LE.1.0) THEN
+              CALL UPSPEC(A, FACT, HS, HSAN, FMSEA, FMSEAAN)
+            ELSEIF (DA1SFCUT.LT.0.0 .AND. DA1SFCUT.GE.-1.0) THEN
+              CALL UPSPART(A, FACT, HS, HSAN, FMSEA, FMSEAAN, SEAMAP)
+            END IF
           ELSE
-            A(1:NSPEC) = VA(1:NSPEC, JSEA)*(WHS*WHS)
+    !          Update spectrum by scaling only
+            A(1:NSPEC) = A(1:NSPEC)*(WHS*WHS)
           END IF
-!DELETE   !CALL DA1SPA(A, CG1, HS, TM, S1, S2)
-!DELETE   !WRITE(*,'(2X,A,2F6.2,2F9.6)') "TEST [AN:HS,T01,S,SM]", &
-!DELETE   !    HS, TM, S1, S2
-!DELETE   !CALL DA1SPA(AP, CG1, HS, TM, S1, S2)
-!DELETE   !WRITE(*,'(2X,A,2F6.2,2F9.6)') "TEST2[AN:HS,T01,S,SM]", &
-!DELETE   !    HS, TM, S1, S2
     !
     ! 4.  Copy assimilated spectrum back to data structure --------------- /
           VA(1:NSPEC, JSEA) = A(1:NSPEC)

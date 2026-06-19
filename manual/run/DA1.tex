@@ -61,12 +61,14 @@ fraction of the surface variance exceeds the threshold,
 then the spectrum is considered primarily wind sea and
 equations~(\ref{eq:DA102})--(\ref{eq:DA104}) apply.
 The threshold value can be adjusted through namelist parameter {\code SEAFCUT},
-\citeauthor{art:LGJ92} uses a threshold value of {\code 0.5} (default), while
+\citeauthor{art:LGJ92} uses a threshold value of {\code 0.5}, while
 \citeauthor{art:TGLDAS22} cited a value of {\code 0.75}. To avoid uneccessary
 overheads of the data assimilation routine, a namelist parameter {\code MAXDKM} for
 maximum distance between model grid point and references assimilation point was
 added to activate data assimilation subroutines (see Table~\ref{tab:DA1_par}).
-
+By default, the wind sea fraction parameter is undefined {\code SEAFCUT = -999.9},
+which omitts Eqs.~(\ref{eq:DA105}), and instead applies a value of $B=1$
+in Eq.~(\ref{eq:DA104}).
 
 % tab:DA1_par
 

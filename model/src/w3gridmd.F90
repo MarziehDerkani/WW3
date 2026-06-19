@@ -3034,14 +3034,14 @@ CONTAINS
 #ifdef W3_DA1
     METHOD = 0
     MAXDKM = 4000.0
-    SEAFCUT = 2.0
+    SEAFCUT = UNDEF
     CALL READNL ( NDSS, 'WDA1', STATUS )
     DA1METHOD = METHOD
     DA1MAXDKM = MAXDKM
     DA1SFCUT = SEAFCUT
     WRITE (NDSO,9240) STATUS
     J = 2
-    IF (DA1SFCUT.GE.0.0 .AND. DA1SFCUT.LE.1.0)  J = 1
+    IF (DA1SFCUT.GE.-1.0 .AND. DA1SFCUT.LE.1.0)  J = 1
     SELECT CASE(DA1METHOD)
       CASE(0)
         WRITE (NDSO,9250) DA1MAXDKM,              &
@@ -6849,7 +6849,7 @@ CONTAINS
 9250 FORMAT ( '        maximum distance (km): ', F7.1/,  &
               '   spatial correlation scheme: ', A/,     &
               '   Cut-off based assimilation: ', A/,     &
-              '    wind sea fraction cut-off: ', F7.3 )
+              '    wind sea fraction cut-off: ', F8.3 )
 #endif
     !
 8972 FORMAT ( '       Wind input reduction factor in presence of ', &
@@ -6945,7 +6945,7 @@ CONTAINS
 #endif
 #ifdef W3_DA1
 9260 FORMAT ( '  &WDA1 METHOD=' ,I1, ', MAXDKM=', F6.1, &
-                  ', SEAFCUT=',F5.3, ' /')
+                  ', SEAFCUT=',F8.3, ' /')
 #endif
 
 3000 FORMAT (/'  The spatial grid: '/                                &
