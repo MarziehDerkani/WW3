@@ -151,6 +151,7 @@ CONTAINS
 !/DELETE  REAL                    :: HSPART, FMPART, FRPART
     REAL                    :: UABS, UDIR, DEPTH
     REAL, ALLOCATABLE       :: WP(:,:)
+    REAL                    :: EB(NK), SPEC2(NK), EBM
     REAL(KIND=8)            :: XDAT, YDAT, DKM, DIST2KM
     INTEGER                 :: PMAP(NK,NTH)
     LOGICAL                 :: SEAMAP(NK,NTH)
@@ -228,7 +229,7 @@ CONTAINS
           CG1(1:NK) = CG(1:NK, ISEA)
           A(1:NSPEC) = VA(1:NSPEC, JSEA)
           CALL DA1SPA(A, CG1, HS, TM, S1, S2)
-         !WRITE(*,'(2X,A8,4I5,2F7.2,F10.1)') "    MOD", IAPROC, NAPROC, ISEA, JSEA, HS, TM, DKM
+          !WRITE(*,'(2X,A8,4I5,2F7.2,F10.1)') "    MOD", IAPROC, NAPROC, ISEA, JSEA, HS, TM, DKM
     !
     !     a) Calculate background correlation
           SELECT CASE(DA1METHOD)
@@ -320,7 +321,27 @@ CONTAINS
             END IF
           ELSE
     !          Update spectrum by scaling only
-            A(1:NSPEC) = A(1:NSPEC)*(WHS*WHS)
+            IF (DATA0(4,IDAT) .LT. 0.0) THEN
+                ! Option 1: Hs only
+                A(1:NSPEC) = A(1:NSPEC)*(WHS*WHS)
+            ELSE
+                ! Option 2: Hs and T01
+                DO ITH=1, NTH
+                    EBM = 0.0
+                    DO IK=1, NK
+                        ISP = ITH+(IK-1)*NTH
+                        EB(IK) = A(ISP)/CG1(IK)*SIG(IK)
+                        EBM = max(EBM, EB(IK))
+                    END DO
+                    IF (EBM .GT. 1.E-4) THEN
+                        CALL SPECINTERP1(1./TM, 1./TMAN, SIG(1:NK)*WTM, EB, SIG(1:NK), SPEC2)
+                        DO IK=1, NK
+                            ISP = ITH+(IK-1)*NTH
+                            A(ISP) = SPEC2(IK)*(WHS*WHS)*WTM*CG1(IK)/SIG(IK)
+                        END DO
+                    END IF
+                END DO
+            END IF
           END IF
     !
     ! 4.  Copy assimilated spectrum back to data structure --------------- /
@@ -863,6 +884,62 @@ CONTAINS
     RETURN
     !
   END SUBROUTINE WSANA
+  !/ ------------------------------------------------------------------- /
+  !>
+  !> @brief Scale spectrum for data assimilation analysis period.
+  !>
+  !> @details 
+  !>
+  !> @param[in]     fmean    Model mean frequency.
+  !> @param[in]     fmeanO   Analysis mean frequency.
+  !> @param[in]     FREQ1    Relative frequencies from data assimilation.
+  !> @param[in]     SPEC     Model spectrum.
+  !> @param[in]     FREQ2    Relative frequencies from model.
+  !>  
+  !> @param[inout]  SPEC2    Scaled spectrum.
+  !> 
+  !> @author Seyed Mostafa SiadatMousavi  @date xx-xxx-xxxx
+  !>
+  SUBROUTINE SPECINTERP1 (fmean, fmeanO, FREQ1, SPEC, FREQ2, SPEC2)
+    !/
+    USE W3GDATMD, ONLY: NK
+    !/
+    IMPLICIT NONE
+    REAL, INTENT(IN) 	:: fmean, fmeanO, FREQ1(NK), SPEC(NK), FREQ2(NK)
+    REAL, INTENT(OUT)	:: SPEC2(NK)
+    REAL             	:: Temp
+    INTEGER          	:: NUM, IK
+    !  
+    IF (fmeanO .lt. fmean) THEN
+      NUM=1    
+      DO IK=1, NK
+        DO WHILE ((NUM .le. NK) .and. (FREQ1(IK).gt.FREQ2(NUM)))
+            NUM=NUM+1 
+        END DO
+      !
+        IF (NUM .lt. NK) THEN
+            Temp=(FREQ2(NUM)-FREQ1(IK))*SPEC(NUM-1)+(FREQ1(IK)-FREQ2(NUM-1))*SPEC(NUM)
+            SPEC2(IK)= max(0., Temp/( FREQ2(NUM) - FREQ2(NUM-1)) )
+        ELSE
+            SPEC2(IK)= max(0., SPEC(NK)*( FREQ1(IK)/FREQ2(NK) )**(-5))
+        END IF           
+      END DO
+    ELSE
+      NUM=1    
+      DO IK=1, NK
+        IF (FREQ1(IK).lt. FREQ2(1)) THEN
+            SPEC2(IK)=max(0., SPEC(1)*exp(-100.*(FREQ2(1)-FREQ1(IK))))
+        ELSE
+            DO WHILE ( FREQ1(IK) .gt. FREQ2(NUM) )
+                NUM=NUM+1 
+            END DO
+            	Temp=(FREQ2(NUM)-FREQ1(IK))*SPEC(NUM-1)+(FREQ1(IK)-FREQ2(NUM-1))*SPEC(NUM)
+            	SPEC2(IK)= max(0., Temp/( FREQ2(NUM) - FREQ2(NUM-1)))          
+        END IF
+      END DO   
+    END IF
+    !
+  END SUBROUTINE SPECINTERP1
   !/ ------------------------------------------------------------------- /
   !>
   !> @brief Compare two floating-point numbers for approximate equality.
