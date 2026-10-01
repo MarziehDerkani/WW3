@@ -257,8 +257,7 @@ CONTAINS
 #ifdef W3_S
     INTEGER, SAVE           :: IENT = 0
 #endif
-    REAL                    :: ZP(NSPEC), ZMIN, ZMAX, Z(NSPEC),     &
-         FACT, WSMAX, HSMAX
+    REAL                    :: ZP(NSPEC), ZMIN, ZMAX, Z(NSPEC), FACT
     REAL                    :: TP(DIMP,DIMXP)
     INTEGER                 :: IK, WIND_PART    ! ChrisB; added for new
     REAL                    :: C, UPAR, SIGCUT  ! UKMO partioning methods
@@ -1298,7 +1297,7 @@ CONTAINS
     !
     USE W3GDATMD, ONLY: NK, NTH, NSPEC, DTH, SIG, DSII, DSIP,       &
          ECOS, ESIN, XFR, FACHFE, TH, FTE
-    USE W3ODATMD, ONLY: IAPROC, NAPERR, NDSE, NDST
+    USE W3ODATMD, ONLY: IAPROC, NAPERR, NDSE
     !
     IMPLICIT NONE
     !/

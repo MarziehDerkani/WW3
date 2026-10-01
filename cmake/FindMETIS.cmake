@@ -9,7 +9,7 @@ set_target_properties(METIS::METIS PROPERTIES
 
 find_package(GKLIB)
 if(NOT GKLIB_FOUND)
-  message(STATUS "Warning, GKLIB not found (skip linker flag -lGKlib")
+  message(STATUS "GKLIB not found")
   target_link_libraries(METIS::METIS)
 else()
   target_link_libraries(METIS::METIS INTERFACE GKLIB::GKLIB)
@@ -22,5 +22,3 @@ find_package_handle_standard_args(
     ${CMAKE_FIND_PACKAGE_NAME}
     REQUIRED_VARS metis_lib
     metis_inc)
-
-message(STATUS "Found METIS: ${metis_lib}")

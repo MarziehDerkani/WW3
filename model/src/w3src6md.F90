@@ -4,7 +4,7 @@
 !>
 !> @author S. Zieger
 !> @author Q. Liu
-!> @date   26-Jun-2018
+!> @date   02-Jan-2025
 !>
 
 #include "w3macros.h"
@@ -22,7 +22,7 @@
 !>
 !> @author S. Zieger
 !> @author Q. Liu
-!> @date   26-Jun-2018
+!> @date   02-Jan-2025
 !>
 MODULE W3SRC6MD
   !/
@@ -31,7 +31,7 @@ MODULE W3SRC6MD
   !/                  |           S. Zieger               |
   !/                  |           Q. Liu                  |
   !/                  |                        FORTRAN 90 |
-  !/                  | Last update :         26-Jun-2018 |
+  !/                  | Last update :         02-Dec-2024 |
   !/                  +-----------------------------------+
   !/
   !/    29-May-2009 : Origination (w3srcxmd.ftn)          ( version 3.14 )
@@ -39,6 +39,8 @@ MODULE W3SRC6MD
   !/                                                         (S. Zieger)
   !/    26-Jun-2017 : Recalibration of ST6                ( verison 6.06 )
   !/                                                         (Q. Liu   )
+  !/    02-Jan-2025 : Add Charnock parameter and consider ( verison 7.14 )
+  !/                  DAIR variable                          (S. Zieger)
   !/
   !/    Copyright 2009 National Weather Service (NWS),
   !/       National Oceanic and Atmospheric Administration.  All rights
@@ -98,10 +100,12 @@ MODULE W3SRC6MD
   !/
   PUBLIC  ::  W3SPR6, W3SIN6, W3SDS6
   PRIVATE ::  LFACTOR, TAUWINDS, IRANGE
-  PRIVATE
     INTEGER, SAVE :: MK10Hz
     INTEGER, ALLOCATABLE, SAVE :: IKN(:)
     REAL, ALLOCATABLE, SAVE :: IK10Hz(:), SIG10Hz(:), DSII10Hz(:)
+#ifdef W3_OMPG || W3_OMPH
+    !$OMP THREADPRIVATE(IKN, MK10Hz, IK10Hz, SIG10Hz, DSII10Hz)
+#endif
 CONTAINS
   !/ ------------------------------------------------------------------- /
 
@@ -283,15 +287,16 @@ CONTAINS
   !> @param[out] TAUWY    Component of the wave-supported stress.
   !> @param[out] TAUWNX   Component of the negative part of the stress.
   !> @param[out] TAUWNY   Component of the negative part of the stress.
+  !> @param[out] CHARN    Charnck parameter (sea-state dependent).
   !> @param[out] S        Source term.
   !> @param[out] D        Diagonal term of derivative.
   !>
   !> @author S. Zieger
   !> @author Q. Liu
-  !> @date   13-Aug-2021
+  !> @date   02-Jan-2025
   !>
   SUBROUTINE W3SIN6 (A, CG, WN2, UABS, USTAR, USDIR, CD, DAIR, &
-       TAUWX, TAUWY, TAUNWX, TAUNWY, S, D )
+       TAUWX, TAUWY, TAUNWX, TAUNWY, CHARN, S, D )
     !/
     !/                  +-----------------------------------+
     !/                  | WAVEWATCH III      NOAA/NCEP/NOPP |
@@ -306,7 +311,7 @@ CONTAINS
     !/
     !/    26-Jun-2018 : UPROXY Update & UABS                ( version 6.06 )
     !/                                                        (Q. Liu)
-    !/    13-Aug-2021 : Consider DAIR a variable           ( version x.xx )
+    !/    02-Jan-2025 : Consider DAIR a variable            ( version 7.14 )
     !/
     !  1. Purpose :
     !
@@ -338,6 +343,7 @@ CONTAINS
     !      D¹       R.A. O  Diagonal term of derivative
     !      TAUWX-Y  Real O  Component of the wave-supported stress
     !      TAUNWX-Y Real O  Component of the negative part of the stress
+    !      CHARN    Real O  Charnock parameter
     !      ¹ Stored as 1-D array with dimension NTH*NK (column by column).
     !     ----------------------------------------------------------------
     !
@@ -379,6 +385,7 @@ CONTAINS
     !/ ------------------------------------------------------------------- /
     USE CONSTANTS, ONLY: DWAT, TPI, GRAV
     USE W3GDATMD,  ONLY: NK, NTH, NSPEC, DTH, SIG2, DDEN2
+    USE W3GDATMD,  ONLY: SIN6CHKMIN
     USE W3GDATMD,  ONLY: ECOS, ESIN, SIN6A0, SIN6WS
     USE W3ODATMD,  ONLY: NDSE
     USE W3SERVMD, ONLY: EXTCDE
@@ -392,7 +399,7 @@ CONTAINS
     !/ Parameter list
     REAL, INTENT(IN)       :: A (NSPEC), CG(NK), WN2(NSPEC)
     REAL, INTENT(IN)       :: UABS, USTAR, USDIR, CD, DAIR
-    REAL, INTENT(OUT)      :: TAUWX, TAUWY, TAUNWX, TAUNWY
+    REAL, INTENT(OUT)      :: TAUWX, TAUWY, TAUNWX, TAUNWY, CHARN
     REAL, INTENT(OUT)      :: S(NSPEC), D(NSPEC)
     !/
     !/ ------------------------------------------------------------------- /
@@ -421,6 +428,7 @@ CONTAINS
     TAUNWY = 0.
     TAUWX  = 0.
     TAUWY  = 0.
+    CHARN  = SIN6CHKMIN
     !
     !/    --- scale  friction velocity to wind speed (10m) in
     !/        the boundary layer ----------------------------------------- /
@@ -495,8 +503,8 @@ CONTAINS
     !         spectral density of the wind input ------------------------- /
     CINV    = CINV2(IKN)
     SDENSIG = RESHAPE(S*SIG2/CG2,(/ NTH,NK /))
-    CALL LFACTOR(SDENSIG, CINV, UABS, USTAR, USDIR, SIG, DSII, &
-         LFACT, TAUWX, TAUWY                          )
+    CALL LFACTOR(SDENSIG, CINV, UABS, USTAR, USDIR, DAIR, SIG, DSII, &
+         LFACT, TAUWX, TAUWY, CHARN             )
     !
     !/ 6) --- apply reduction (LFACT) to the entire spectrum ------------- /
     IF (SUM(LFACT) .LT. NK) THEN
@@ -771,37 +779,45 @@ CONTAINS
   !>  of the spectrum to meet the constraint on total stress (TAU).
   !>  The constraint is TAU <= TAU_TOT (TAU_TOT = TAU_WAV + TAU_VIS),
   !>  thus the wind input is reduced to match our constraint.
+  !>  This subroutine will compute the charnock parameter
+  !>  CHARN = CHKMIN / SQRT(1-TAU_WAV/TAU_TOT) with CHKMIN being the
+  !>  minimum value. To allow for a reduction of surface drag at high
+  !>  wind speeds a threshold based minimum charnock parameter is
+  !>  optional.
   !>
   !> @param[in]  S      Wind input energy density spectrum.
   !> @param[in]  CINV   Inverse phase speed.
   !> @param[in]  U10    Wind speed.
   !> @param[in]  USTAR  Friction velocity.
   !> @param[in]  USDIR  Wind direction.
+  !> @param[in]  DAIR   Air densiry.
   !> @param[in]  SIG    Relative frequencies (in rad.).
   !> @param[in]  DSII   Frequency bandwidths (in rad.).
   !> @param[out] LFACT  Factor array.
   !> @param[out] TAUWX  Component of the wave-supported stress.
   !> @param[out] TAUWY  Component of the wave-supported stress.
+  !> @param[out] CHARN  Charnock parameter.
   !>
   !> @author S. Zieger
   !> @author Q. Liu
-  !> @date   26-Jun-2018
+  !> @date   11-Oct-2024
   !>
-  SUBROUTINE LFACTOR(S, CINV, U10, USTAR, USDIR, SIG, DSII, &
-       LFACT, TAUWX, TAUWY                    )
+  SUBROUTINE LFACTOR(S, CINV, U10, USTAR, USDIR, DAIR, SIG, DSII, &
+       LFACT, TAUWX, TAUWY, CHARN             )
     !/
     !/                  +-----------------------------------+
     !/                  | WAVEWATCH III           NOAA/NCEP |
     !/                  |           S. Zieger               |
     !/                  |           Q. Liu                  |
     !/                  |                        FORTRAN 90 |
-    !/                  | Last update :         26-Jun-2018 |
+    !/                  | Last update :         02-Dec-2024 |
     !/                  +-----------------------------------+
     !/
     !/    15-Feb-2011 : Implemented following Rogers et al. (2012)
     !/                                                        (S. Zieger)
     !/    26-Jun-2018 : UPROXY, DSII10Hz Updates            ( version 6.06 )
     !/                                                        (Q. Liu   )
+    !/    02-Jan-2025 : Consider DAIR a variable           ( version 7.14 )
     !
     !     Rogers et al. (2012) JTECH 29(9), 1329-1346
     !
@@ -833,20 +849,32 @@ CONTAINS
     !        using reduction factor:
     !                          LFACT(F) = MIN(1,exp((1-U/C(F))*RTAU))
     !        Then alter RTAU and repeat 3) until our constraint is matched.
+    !     4) Charnock parameter after equation (3.47) (Komen el al, 1994):
+    !                            CHKMIN
+    !           CHARN = ---------------------------
+    !                   SQRT( 1.0 - TAU_W/TAU_TOT )
     !
+    !        OPTIONAL: To allow for a reduction of surface drag at high
+    !        wind speeds a threshold based minimum charnock parameter
+    !        CHKMIN is adopted (Breivik et al, 2022, JGR):
+    !                                                            U-UCAP
+    !           CHKMIN = CHKINF + 0.5(CHKMIN - CHKINF)*(1 - TANH ------)
+    !                                                            DELTA
     !  3. Parameters :
     !
     !     Parameter list
     !     ----------------------------------------------------------------
-    !      S       R.A. I  Wind input energy density spectrum  (S_{in}(σ, θ))
+    !      S       R.A. I  Wind input energy density spectrum Sin(sigma,theta)
     !      CINV    R.A. I  Inverse phase speed                  1/C(sigma)
     !      U10     Real I  Wind speed (10m)
     !      USTAR   Real I  Friction velocity
     !      USDIR   Real I  Wind direction
+    !      DAIR    Real I  Air densiry
     !      SIG     R.A. I  Relative frequencies [in rad.]
     !      DSII    R.A. I  Frequency bandwiths [in rad.]
     !      LFACTOR R.A. O  Factor array                       LFACT(sigma)
     !      TAUWX-Y Real O  Component of the wave-supported stress
+    !      CHARN   Real O  Charnock parameter
     !     ----------------------------------------------------------------
     !
     !  4. Subroutines used :
@@ -867,9 +895,10 @@ CONTAINS
     !      case the last approximation for RTAU is used.
     !
     !/
-    USE CONSTANTS, ONLY: DAIR, GRAV, TPI
+    USE CONSTANTS, ONLY: GRAV, TPI
     USE W3GDATMD,  ONLY: NK, NTH, NSPEC, DTH, XFR, ECOS, ESIN
-    USE W3GDATMD,  ONLY: SIN6WS
+    USE W3GDATMD,  ONLY: SIN6WS, SIN6CHKMIN, SIN6FLCAP,             &
+                         SIN6CHKCAP, SIN6CHKINF, SIN6CHKSIG
     USE W3ODATMD,  ONLY: NDST, NDSE, IAPROC, NAPERR
     USE W3TIMEMD,  ONLY: STME21
     USE W3WDATMD,  ONLY: TIME
@@ -884,10 +913,12 @@ CONTAINS
     REAL, INTENT(IN)  :: CINV(NK)       ! inverse phase speed
     REAL, INTENT(IN)  :: U10            ! wind speed
     REAL, INTENT(IN)  :: USTAR, USDIR   ! friction velocity & direction
+    REAL, INTENT(IN)  :: DAIR           ! air densiry
     REAL, INTENT(IN)  :: SIG(NK)        ! relative frequencies
     REAL, INTENT(IN)  :: DSII(NK)       ! frequency bandwidths
     REAL, INTENT(OUT) :: LFACT(NK)      ! correction factor
     REAL, INTENT(OUT) :: TAUWX, TAUWY   ! normal stress components
+    REAL, INTENT(OUT) :: CHARN          ! Charnock parameter
     !
     !/    --- local parameters (in order of appearance) ------------------ /
 #ifdef W3_S
@@ -904,6 +935,7 @@ CONTAINS
     REAL              :: TAU_TOT, TAU, TAU_VIS, TAU_WAV
     REAL              :: TAUVX, TAUVY, TAUX, TAUY
     REAL              :: TAU_NND, TAU_INIT(2)
+    REAL              :: CHKMIN
     REAL              :: UPROXY, RTAU, DRTAU, ERR
     LOGICAL           :: OVERSHOT, FLGSET10Hz
     CHARACTER(LEN=23) :: IDTIME
@@ -969,7 +1001,7 @@ CONTAINS
       END IF
       !
       CINV10Hz(1:NK)          = CINV
-      CINV10Hz(NK+1:NK10Hz)   = SIG10Hz(NK+1:NK10Hz)*0.101978 ! 1/c=σ/g
+      CINV10Hz(NK+1:NK10Hz)   = SIG10Hz(NK+1:NK10Hz)*0.101978 ! 1/c=sigma/grav
       !        --- Spectral slope for S_IN(F) is proportional to F**(-2) ------ /
       SDENS10Hz(NK+1:NK10Hz)  = SDENS10Hz(NK)  * (SIG10Hz(NK)/SIG10Hz(NK+1:NK10Hz))**2
       SDENSX10Hz(NK+1:NK10Hz) = SDENSX10Hz(NK) * (SIG10Hz(NK)/SIG10Hz(NK+1:NK10Hz))**2
@@ -1063,6 +1095,17 @@ CONTAINS
     END IF
     !
     LFACT(1:NK) = LF10Hz(1:NK)
+    !
+    !/ 4) --- Sea-state depended Charnoc parameter w/ wind speed cap --------- /
+    !
+    CHKMIN = SIN6CHKMIN
+    !
+    IF (SIN6FLCAP) THEN
+      CHKMIN = SIN6CHKINF + 0.5 * (SIN6CHKMIN - SIN6CHKINF) *  &
+             (1.0 - TANH( (U10 - SIN6CHKCAP) / SIN6CHKSIG ))
+    END IF
+    !
+    CHARN = CHKMIN / SQRT(1.0 - MIN(TAU_WAV / TAU_TOT, 0.99))
     !
 #ifdef W3_T6
     WRITE (NDST,273) 'Sin ', IDTIME(1:19), SDENS10Hz*TPI

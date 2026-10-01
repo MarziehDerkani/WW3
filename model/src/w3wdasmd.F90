@@ -203,6 +203,10 @@ CONTAINS
     USE W3SERVMD, ONLY: STRACE
 #endif
     !
+#ifdef W3_T
+    USE W3ODATMD, ONLY: NDSO, NDSE, NDST, SCREEN, NAPROC, IAPROC, NAPOUT, NAPERR
+#endif
+    !
 #ifdef W3_MPI
     use mpi_f08
 #endif
@@ -221,9 +225,8 @@ CONTAINS
     !/ ------------------------------------------------------------------- /
     !/ Local parameters :
     !/
-    INTEGER                 :: J
 #ifdef W3_T
-    INTEGER                 :: MREC, MDAT, IREC, IDAT
+    INTEGER                 :: MREC, MDAT, IREC, IDAT, J
 #endif
 #ifdef W3_S
     INTEGER, SAVE           :: IENT = 0
