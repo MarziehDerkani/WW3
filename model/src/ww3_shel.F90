@@ -2714,7 +2714,7 @@ PROGRAM W3SHEL
 #ifdef W3_TIDE
 974 FORMAT ( '     Updating ',A,'using tidal constituents')
 #endif
-975 FORMAT (/'  Data assimmilation at ',A)
+975 FORMAT (/'  Data assimilation at ',A)
   !
 1001 FORMAT (/' *** WAVEWATCH III ERROR IN W3SHEL : *** '/           &
        '     PREMATURE END OF INPUT FILE'/)

@@ -2,7 +2,7 @@
 !> @brief Contains module W3WDA1MD.
 !>
 !> @author M. Derkani (University of Western Australia)
-!> @date 12-Dec-2025
+!> @date 07-Oct-2026
 !>
 
 #include "w3macros.h"
@@ -14,7 +14,7 @@
 !> data assimilation software to WAVEWATCH III interface W3WDASMD.
 !>
 !> @author M. Derkani (University of Western Australia)
-!> @date 12-Dec-2025
+!> @date 07-Oct-2026
 !>
 MODULE W3WDA1MD
   PUBLIC :: W3WDA1
@@ -49,7 +49,7 @@ CONTAINS
   !> @param[in] DATA0 Observations (mean parameters).
   !>
   !> @author M. Derkani (University of Western Australia)
-  !> @date 12-Dec-2025
+  !> @date 07-Oct-2026
   !>
   SUBROUTINE W3WDA1 ( MDAT, NDAT, DATA0 )
     !/
@@ -57,7 +57,7 @@ CONTAINS
     !/                  | WAVEWATCH III           NOAA/NCEP |
     !/                  |           H. L. Tolman            |
     !/                  |                        FORTRAN 90 |
-    !/                  | Last update :         03-Jan-2025 |
+    !/                  | Last update :         07-Oct-2026 |
     !/                  +-----------------------------------+
     !/
     !/    03-Jan-2025 : Origination.                        ( version 7.14 )
@@ -106,7 +106,7 @@ CONTAINS
     USE CONSTANTS, ONLY: RADIUS, TPI, DERA, RADE, UNDEF
     USE W3ADATMD, ONLY: CG, WN, U10, U10D, DW
 #ifdef W3_MPI
-    USE W3ADATMD, ONLY: MPI_COMM_WAVE
+    USE W3ADATMD, ONLY: MPI_COMM_WCMP
 #endif
     USE W3WDATMD, ONLY: VA, ASF, UST
     USE W3GDATMD, ONLY: NSPEC, NK, NTH, NSEAL, SIG, MAPSF, &
@@ -148,11 +148,10 @@ CONTAINS
     REAL                    :: CG1(NK), FACT(NK)
     REAL                    :: TMAN, HSAN, WTM, WHS, WS, TSEA, USTAN
     REAL                    :: HSSEA, FMSEA, FMSEAAN, SEAFR, SEAAN
-!/DELETE  REAL                    :: HSPART, FMPART, FRPART
     REAL                    :: UABS, UDIR, DEPTH
     REAL, ALLOCATABLE       :: WP(:,:)
-    REAL(KIND=8)            :: XDAT, YDAT, DKM, DIST2KM
-    INTEGER                 :: PMAP(NK,NTH)
+    REAL(KIND=8)            :: XDAT, YDAT, DKM, DIST2KM, DKMIAPROC(NAPROC)
+    INTEGER                 :: PMAP(NK,NTH), ISEAIAPROC(NAPROC)
     LOGICAL                 :: SEAMAP(NK,NTH)
 #ifdef W3_MPI
     INTEGER                 :: IERR_MPI
@@ -172,6 +171,11 @@ CONTAINS
     !
 #ifdef W3_S
     CALL STRACE (IENT, 'W3WDA1')
+#endif
+#ifdef W3_MPI
+    IF (IAPROC .GT. NAPROC) THEN
+      RETURN
+    END IF
 #endif
     !
     ! 2.  Data routine --------------------------------------------------- /
@@ -197,7 +201,19 @@ CONTAINS
       YDAT = DBLE(DATA0(2,IDAT))
       IF (DATA0(3,IDAT) .LT. HSMIN) CYCLE
 
-      CALL INIT_GET_DATISEA(XDAT, YDAT, ISEA)
+      ISEAIAPROC(1:NAPROC) = -999
+      DKMIAPROC(1:NAPROC) = 44.0E3
+
+      CALL INIT_GET_DATISEA(XDAT, YDAT, ISEAIAPROC(IAPROC) , DKMIAPROC(IAPROC))
+      DKMIAPROC(IAPROC) = DKMIAPROC(IAPROC)*DIST2KM
+#ifdef W3_MPI
+      CALL MPI_ALLGATHER(ISEAIAPROC(IAPROC), 1, MPI_INTEGER, &
+                         ISEAIAPROC, 1, MPI_INTEGER, MPI_COMM_WCMP, IERR_MPI)
+      CALL MPI_ALLGATHER(DKMIAPROC(IAPROC), 1, MPI_REAL8, &
+                         DKMIAPROC, 1, MPI_REAL8, MPI_COMM_WCMP, IERR_MPI)
+#endif
+      DATPROC = MINLOC(DKMIAPROC, DIM=1)
+      ISEA = ISEAIAPROC(DATPROC)
       IF (ISEA.LE.0) CYCLE
 
       CALL INIT_GET_JSEA_ISPROC(ISEA, JSEA, DATPROC)
@@ -210,10 +226,8 @@ CONTAINS
       ! WRITE(*,'(2X,A8,4I6,4F8.3)') "DA-PROC", IAPROC, DATPROC, ISEA, JSEA, HSDAT, TMDAT, S1DAT, S2DAT
       ENDIF
 #ifdef W3_MPI
-      CALL MPI_BARRIER(MPI_COMM_WAVE, IERR_MPI)
-      CALL MPI_BCAST(HSDAT, 1, MPI_REAL, DATPROC-1, MPI_COMM_WAVE, IERR_MPI)
-      CALL MPI_BCAST(TMDAT, 1, MPI_REAL, DATPROC-1, MPI_COMM_WAVE, IERR_MPI)
-      CALL MPI_BARRIER(MPI_COMM_WAVE, IERR_MPI)
+      CALL MPI_BCAST(HSDAT, 1, MPI_REAL, DATPROC-1, MPI_COMM_WCMP, IERR_MPI)
+      CALL MPI_BCAST(TMDAT, 1, MPI_REAL, DATPROC-1, MPI_COMM_WCMP, IERR_MPI)
 #endif
      !WRITE(*,'(2X,A8,4I6,2F7.2)') "IAPROC ", IAPROC, DATPROC, ISEA, JSEA, HSDAT, TMDAT
 
@@ -276,27 +290,27 @@ CONTAINS
             CALL EXTCDE(99)
           END IF
     !
-          CALL W3PART(E, UABS, UDIR, DEPTH, WN(1:NK, ISEA), &
-                      NP, WP, DIMXP, PMAP)
-          ! Array WP contains integral parameters describing partitions,
-          ! where index 0 contains parameters for entire spectrum.
-          DO IP=1, NP
-            ! Scan for wind sea part (wind sea fraction >= threshold)
-            ! as per default partitioning in W3PART.
-            IF (WP(6,IP).GE.WSCUT) THEN
-              DO IK=1, NK
-                DO ITH=1, NTH
-                  ISP = ITH+(IK-1)*NTH
-                  IF (PMAP(IK,ITH).EQ.IP) SEAMAP(IK,ITH) = .TRUE.
-                END DO
-              END DO
-              HSSEA = WP(1, IP)
-              FMSEA = 1.0/WP(13, IP) ! mean frequency
-              SEAFR = MIN((HSSEA*HSSEA)/(WP(1,0)*WP(1,0)), 1.0)
-            END IF
-          END DO
-    !
           IF (DA1SFCUT.GT.(UNDEF+0.1)) THEN
+            CALL W3PART(E, UABS, UDIR, DEPTH, WN(1:NK, ISEA), &
+                        NP, WP, DIMXP, PMAP)
+            ! Array WP contains integral parameters describing partitions,
+            ! where index 0 contains parameters for entire spectrum.
+            DO IP=1, NP
+             ! Scan for wind sea part (wind sea fraction >= threshold)
+             ! as per default partitioning in W3PART.
+             IF (WP(6,IP).GE.WSCUT) THEN
+               DO IK=1, NK
+                 DO ITH=1, NTH
+                   ISP = ITH+(IK-1)*NTH
+                   IF (PMAP(IK,ITH).EQ.IP) SEAMAP(IK,ITH) = .TRUE.
+                 END DO
+               END DO
+               HSSEA = WP(1, IP)
+               FMSEA = 1.0/WP(13, IP) ! mean frequency
+               SEAFR = MIN((HSSEA*HSSEA)/(WP(1,0)*WP(1,0)), 1.0)
+             END IF
+            END DO
+    !
             IF ( (DA1SFCUT.LT.0.0 .OR. SEAFR.GT.DA1SFCUT)  &
                  .AND. HSSEA.GT.HSMIN) THEN
     !       c) Estimate duration of wind sea from wind sea analysis
@@ -337,6 +351,8 @@ CONTAINS
     ! Restore user-defined partition method
     PTMETH = W3PTMETH
     FLCOMB = W3FLCOMB
+    !
+    IF (ALLOCATED(WP)) DEALLOCATE(WP)
     !
     RETURN
     !
@@ -536,7 +552,8 @@ CONTAINS
   END SUBROUTINE DA1AN
   !/ ------------------------------------------------------------------- /
   !>
-  !> @brief Get ISEA for DA.
+  !> @brief Get ISEA for DA location. Loop over local set of
+  !>        sea points only.
   !>
   !> @param[in] X longitude of observation point.
   !> @param[in] Y latitude of observation point.
@@ -545,38 +562,43 @@ CONTAINS
   !>
   !> @author  @date 
   !>
-  SUBROUTINE INIT_GET_DATISEA ( X, Y, ISEA )
+  SUBROUTINE INIT_GET_DATISEA ( X, Y, ISEA, D )
   !/
-    USE W3GDATMD, ONLY: FLAGLL, NX, NY, MAPFS, MAPSTA, XGRD, YGRD
+    USE W3PARALL, ONLY: INIT_GET_ISEA
+    USE W3GDATMD, ONLY: FLAGLL, NX, NY, MAPFS, MAPSTA, XGRD, YGRD, &
+                        MAPSF, NSEAL
     USE W3GSRUMD, ONLY: W3DIST
   !/
     IMPLICIT NONE
     REAL(KIND=8), INTENT(IN) :: X, Y
     INTEGER, INTENT(OUT)     :: ISEA
-    REAL(KIND=8)             :: D, DIST, DMIN
-    INTEGER                  :: IX, IY
+    REAL(KIND=8), INTENT(INOUT) :: D
+    REAL(KIND=8)             :: DIST, DMIN
+    INTEGER                  :: JSEA, I, IX, IY
   !/
     ISEA = -999
-    D = HUGE(D)
     IF (FLAGLL) THEN
        DMIN = 1.0
     ELSE
        DMIN = 100.E3
     END IF
   !/
-    DO IX=1, NX
-      DO IY=1, NY
-        IF ( MAPSTA(IY,IX) .LT. 0 ) CYCLE
-        IF ((ABS(X-XGRD(IY,IX)).LT.DMIN).AND. &
-            (ABS(Y-YGRD(IY,IX)).LT.DMIN)) THEN
-          DIST = W3DIST(FLAGLL,X,Y,XGRD(IY,IX),YGRD(IY,IX))
-          IF (DIST .LT. D) THEN
-            D = DIST
-            ISEA = MAPFS(IY,IX)
-          END IF
+    DO JSEA=1, NSEAL
+      CALL INIT_GET_ISEA(I, JSEA)
+      IX = MAPSF(I,1)
+      IY = MAPSF(I,2)
+      IF (MAPSTA(IY,IX) .LT. 0) CYCLE
+  !/
+      IF ((ABS(X-XGRD(IY,IX)).LT.DMIN).AND. &
+          (ABS(Y-YGRD(IY,IX)).LT.DMIN)) THEN
+        DIST = W3DIST(FLAGLL,X,Y,XGRD(IY,IX),YGRD(IY,IX))
+        IF (DIST .LT. D) THEN
+          D = DIST
+          ISEA = MAPFS(IY,IX)
         END IF
-      END DO
+      END IF
     END DO
+
   !/
   END SUBROUTINE INIT_GET_DATISEA
   !/ ------------------------------------------------------------------- /
